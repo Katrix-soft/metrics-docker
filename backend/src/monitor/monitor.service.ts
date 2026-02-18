@@ -191,8 +191,8 @@ export class MonitorService {
 
     async sendWhin(message: string) {
         try {
-            // Whin via RapidAPI (Configured by User)
-            const response = await fetch('https://whin2.p.rapidapi.com/send2group', {
+            // Whin Personal Message via RapidAPI (to your self/number)
+            const response = await fetch('https://whin2.p.rapidapi.com/send', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
