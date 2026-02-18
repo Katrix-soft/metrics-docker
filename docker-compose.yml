@@ -1,8 +1,8 @@
 services:
-  backend:
+  katrix-monitor-backend:
     build:
-      context: .
-      dockerfile: backend/Dockerfile
+      context: ./backend
+      dockerfile: Dockerfile
     container_name: katrix-api
     restart: always
     volumes:
@@ -13,15 +13,14 @@ services:
     environment:
       - PORT=3000
       - TZ=UTC
-    # Sin límites estrictos de CPU/RAM durante el despliegue para evitar errores de Portainer
 
-  frontend:
+  katrix-monitor-frontend:
     build:
-      context: .
-      dockerfile: frontend/Dockerfile
+      context: ./frontend
+      dockerfile: Dockerfile
     container_name: katrix-web
     restart: always
     ports:
       - "4200:4200"
     depends_on:
-      - backend
+      - katrix-monitor-backend

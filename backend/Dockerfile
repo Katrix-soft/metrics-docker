@@ -1,9 +1,9 @@
 FROM node:20-alpine
 WORKDIR /app
-# Copiamos desde la raíz del proyecto
-COPY backend/package*.json ./
+# El contexto será la carpeta 'backend', por lo que copiamos directamente
+COPY package*.json ./
 RUN npm install
-COPY backend/ .
+COPY . .
 RUN npm run build
 
 # Imagen final
