@@ -1,0 +1,15 @@
+{
+    "name": "katrix-monitor-lite-root",
+    "version": "1.0.0",
+    "scripts": {
+        "start:backend": "cd backend && npm run start:dev",
+        "start:frontend": "cd frontend && npm start",
+        "dev": "npx concurrently \"npm run start:backend\" \"npm run start:frontend\"",
+        "build:frontend": "cd frontend && npm run build",
+        "build:backend": "cd backend && npm run build",
+        "prepare:prod": "npm run build:frontend && xcopy /E /I /Y frontend\\dist backend\\public"
+    },
+    "devDependencies": {
+        "concurrently": "^8.2.2"
+    }
+}

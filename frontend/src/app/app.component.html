@@ -1,0 +1,184 @@
+<div class="container">
+    <header class="header">
+        <div class="brand">
+            KATRIX MONITOR <span style="font-weight: 300; opacity: 0.6; font-size: 0.8em;">LITE</span>
+        </div>
+        <div class="system-summary">
+            <div class="summary-item">
+                <span class="label">HOSTNAME</span>
+                <span class="value">{{ system?.hostname }}</span>
+            </div>
+            <div class="summary-item">
+                <span class="label">OS</span>
+                <span class="value">{{ system?.os }}</span>
+            </div>
+            <div class="summary-item">
+                <span class="label">KERNEL</span>
+                <span class="value">{{ system?.kernel }}</span>
+            </div>
+            <div class="summary-item">
+                <span class="label">UPTIME</span>
+                <span class="value">{{ system?.uptime }}</span>
+            </div>
+            <button class="pause-btn" (click)="togglePause()" [class.paused]="paused">
+                {{ paused ? 'RESUME' : 'PAUSE' }}
+            </button>
+        </div>
+    </header>
+
+    <div class="dashboard-grid">
+        <div class="card">
+            <div class="card-title">CPU USAGE</div>
+            <div class="card-value">{{ system?.cpu }}%</div>
+            <div style="font-size: 0.7rem; color: var(--secondary-text); margin-top: 0.5rem;">
+                {{ system?.cpuModel }} ({{ system?.cpuCores }} Cores &#64; {{ system?.cpuSpeed }})
+            </div>
+            <div class="chart-container">
+                <canvas #cpuChart></canvas>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-title">RAM USAGE ({{ system?.memory?.used }} / {{ system?.memory?.total }})</div>
+            <div class="card-value">{{ system?.memory?.percent }}%</div>
+            <div class="chart-container">
+                <canvas #memChart></canvas>
+            </div>
+        </div>
+
+        <div class="card" *ngFor="let disk of system?.disk">
+            <div class="card-title">DISK: {{ disk.fs }}</div>
+            <div class="card-value">{{ disk.use }}%</div>
+            <div style="color: var(--secondary-text); font-size: 0.8rem; margin-top: 0.5rem;">
+                Used: {{ disk.used }} / {{ disk.size }}
+            </div>
+            <div
+                style="width: 100%; height: 8px; background: #30363d; border-radius: 4px; margin-top: 1rem; overflow: hidden;">
+                <div [style.width.%]="disk.use" style="height: 100%; background: var(--accent-color);"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card" style="margin-bottom: 2rem;">
+        <div class="card-title">NETWORK STATS</div>
+        <div style="display: flex; gap: 2rem;">
+            <div *ngFor="let net of system?.network">
+                <div style="color: var(--secondary-text); font-size: 0.7rem;">{{ net.iface }}</div>
+                <div style="font-size: 1.1rem;">RX: <span style="color: var(--accent-color)">{{ net.rx }}</span></div>
+                <div style="font-size: 1.1rem;">TX: <span style="color: #bc8cff">{{ net.tx }}</span></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header-actions">
+            <div class="card-title">DOCKER CONTAINERS ({{ docker.length }})</div>
+            <div class="docker-summary">
+                <div class="summary-chip">Total: {{ docker.length }}</div>
+                <div class="summary-chip running">Running: {{ getRunningCount() }}</div>
+                <div class="summary-chip exited">Exited: {{ docker.length - getRunningCount() }}</div>
+            </div>
+            <div class="search-box">
+                <input type="text" [(ngModel)]="searchTerm" placeholder="Search containers..." class="search-input">
+            </div>
+        </div>
+        <div style="overflow-x: auto;">
+            <table class="docker-table">
+                <thead>
+                    <tr>
+                        <th>NAME</th>
+                        <th>STATUS</th>
+                        <th>CPU</th>
+                        <th>MEMORY</th>
+                        <th>NETWORK (RX/TX)</th>
+                        <th>VOLUMES</th>
+                        <th>ACTIONS</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr *ngFor="let container of filteredDocker">
+                        <td>
+                            <div style="font-weight: 600;">{{ container.name }}</div>
+                            <div style="font-size: 0.7rem; color: var(--accent-color)">{{ container.image }}</div>
+                            <div style="font-size: 0.7rem; color: var(--secondary-text)">{{ container.id }}</div>
+                        </td>
+                        <td>
+                            <span class="status-badge"
+                                [ngClass]="container.status === 'running' ? 'status-running' : 'status-exited'">
+                                {{ container.status.toUpperCase() }}
+                            </span>
+                        </td>
+                        <td>{{ container.cpu }}</td>
+                        <td>{{ container.memory }}</td>
+                        <td>
+                            <span style="font-size: 0.8rem;">IN: {{ container.network.rx }}</span><br>
+                            <span style="font-size: 0.8rem;">OUT: {{ container.network.tx }}</span>
+                        </td>
+                        <td>
+                            <div *ngFor="let vol of container.volumes"
+                                style="font-size: 0.7rem; color: var(--secondary-text)">
+                                {{ vol }}
+                            </div>
+                        </td>
+                        <td>
+                            <div style="display: flex; gap: 0.5rem;">
+                                <button *ngIf="container.status !== 'running'" (click)="startContainer(container.id)"
+                                    class="action-btn start-btn" title="Start Container">
+                                    <svg width="14" height="14" fill="currentColor" viewBox="0 0 16 16">
+                                        <path
+                                            d="m11.596 8.697-6.363 3.692c-.54.313-1.233-.066-1.233-.697V4.308c0-.63.692-1.01 1.233-.696l6.363 3.692a.802.802 0 0 1 0 1.393z" />
+                                    </svg>
+                                </button>
+                                <button *ngIf="container.status === 'running'" (click)="stopContainer(container.id)"
+                                    class="action-btn stop-btn" title="Stop Container">
+                                    <svg width="14" height="14" fill="currentColor" viewBox="0 0 16 16">
+                                        <path
+                                            d="M5 3.5h6A1.5 1.5 0 0 1 12.5 5v6a1.5 1.5 0 0 1-1.5 1.5H5A1.5 1.5 0 0 1 3.5 11V5A1.5 1.5 0 0 1 5 3.5z" />
+                                    </svg>
+                                </button>
+                                <button (click)="restartContainer(container.id)" class="action-btn restart-btn"
+                                    title="Restart Container">
+                                    <svg width="14" height="14" fill="currentColor" viewBox="0 0 16 16">
+                                        <path fill-rule="evenodd"
+                                            d="M8 3a5 5 0 1 0 4.546 2.914.5.5 0 0 1 .908-.417A6 6 0 1 1 8 2v1z" />
+                                        <path
+                                            d="M8 4.466V.534a.25.25 0 0 1 .41-.192l2.36 1.966c.12.1.12.284 0 .384L8.41 4.658A.25.25 0 0 1 8 4.466z" />
+                                    </svg>
+                                </button>
+                                <button (click)="getLogs(container)" class="action-btn logs-btn" title="View Logs">
+                                    <svg width="14" height="14" fill="currentColor" viewBox="0 0 16 16">
+                                        <path
+                                            d="M2 1a1 1 0 0 0-1 1v12a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V2a1 1 0 0 0-1-1H2zm12 1v12H2V2h12z" />
+                                        <path
+                                            d="M4.5 5a.5.5 0 0 0 0 1h7a.5.5 0 0 0 0-1h-7zm0 2.5a.5.5 0 0 0 0 1h7a.5.5 0 0 0 0-1h-7zm0 2.5a.5.5 0 0 0 0 1h4a.5.5 0 0 0 0-1h-4z" />
+                                    </svg>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    <tr *ngIf="docker.length === 0">
+                        <td colspan="7" style="text-align: center; padding: 2rem; color: var(--secondary-text)">
+                            No containers found or Docker Socket missing.
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="modal-overlay" *ngIf="showLogs" (click)="closeLogs()">
+        <div class="modal" (click)="$event.stopPropagation()">
+            <div class="modal-header">
+                <h3>LOGS: {{ selectedContainer?.name }}</h3>
+                <button class="close-btn" (click)="closeLogs()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <pre>{{ currentLogs }}</pre>
+            </div>
+        </div>
+    </div>
+
+    <div class="toast" *ngIf="statusMessage">
+        {{ statusMessage }}
+    </div>
+</div>

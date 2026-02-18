@@ -1,0 +1,145 @@
+import { Injectable } from '@nestjs/common';
+import * as si from 'systeminformation';
+import * as Docker from 'dockerode';
+
+@Injectable()
+export class MonitorService {
+    private docker: Docker;
+
+    constructor() {
+        const isWindows = process.platform === 'win32';
+        const socketPath = isWindows ? '//./pipe/docker_engine' : '/var/run/docker.sock';
+        this.docker = new Docker({ socketPath });
+    }
+
+    async getSystemStats() {
+        const [cpu, mem, fs, net, time, os, cpuInfo] = await Promise.all([
+            si.currentLoad(),
+            si.mem(),
+            si.fsSize(),
+            si.networkStats(),
+            si.time(),
+            si.osInfo(),
+            si.cpu(),
+        ]);
+
+        return {
+            hostname: os.hostname,
+            os: `${os.distro} ${os.release}`,
+            kernel: os.kernel,
+            arch: os.arch,
+            cpuModel: `${cpuInfo.manufacturer} ${cpuInfo.brand}`,
+            cpuCores: cpuInfo.cores,
+            cpuSpeed: cpuInfo.speed + 'GHz',
+            cpu: cpu.currentLoad.toFixed(2),
+            memory: {
+                total: (mem.total / 1024 / 1024 / 1024).toFixed(2) + ' GB',
+                used: (mem.used / 1024 / 1024 / 1024).toFixed(2) + ' GB',
+                free: (mem.free / 1024 / 1024 / 1024).toFixed(2) + ' GB',
+                percent: ((mem.used / mem.total) * 100).toFixed(2),
+            },
+            disk: fs.map(d => ({
+                fs: d.fs,
+                size: (d.size / 1024 / 1024 / 1024).toFixed(2) + ' GB',
+                used: (d.used / 1024 / 1024 / 1024).toFixed(2) + ' GB',
+                available: (d.available / 1024 / 1024 / 1024).toFixed(2) + ' GB',
+                use: d.use,
+            })),
+            network: net.map(n => ({
+                iface: n.iface,
+                rx: (n.rx_sec / 1024).toFixed(2) + ' KB/s',
+                tx: (n.tx_sec / 1024).toFixed(2) + ' KB/s',
+            })),
+            uptime: this.formatUptime(time.uptime),
+        };
+    }
+
+    async getDockerStats() {
+        try {
+            const containers = await this.docker.listContainers({ all: true });
+            const stats = await Promise.all(
+                containers.map(async (containerInfo) => {
+                    const container = this.docker.getContainer(containerInfo.Id);
+                    const containerStats = await container.stats({ stream: false });
+
+                    // Basic CPU calculation from docker stats
+                    const cpuDelta = containerStats.cpu_stats.cpu_usage.total_usage - containerStats.precpu_stats.cpu_usage.total_usage;
+                    const systemDelta = containerStats.cpu_stats.system_cpu_usage - containerStats.precpu_stats.system_cpu_usage;
+                    const cpuPercent = systemDelta > 0 ? (cpuDelta / systemDelta) * containerStats.cpu_stats.online_cpus * 100 : 0;
+
+                    const memUsed = containerStats.memory_stats.usage;
+                    const memLimit = containerStats.memory_stats.limit;
+
+                    return {
+                        id: containerInfo.Id.substring(0, 12),
+                        name: containerInfo.Names[0].replace('/', ''),
+                        image: containerInfo.Image,
+                        status: containerInfo.State,
+                        cpu: cpuPercent.toFixed(2) + '%',
+                        memory: (memUsed / 1024 / 1024).toFixed(2) + ' MB',
+                        network: {
+                            rx: (containerStats.networks?.eth0?.rx_bytes / 1024 / 1024).toFixed(2) + ' MB',
+                            tx: (containerStats.networks?.eth0?.tx_bytes / 1024 / 1024).toFixed(2) + ' MB',
+                        },
+                        volumes: containerInfo.Mounts?.map(m => m.Destination) || [],
+                    };
+                })
+            );
+            return stats;
+        } catch (error) {
+            return { error: 'Docker socket not available or permission denied' };
+        }
+    }
+
+    async restartContainer(id: string) {
+        const container = this.docker.getContainer(id);
+        return container.restart();
+    }
+
+    async stopContainer(id: string) {
+        const container = this.docker.getContainer(id);
+        return container.stop();
+    }
+
+    async startContainer(id: string) {
+        const container = this.docker.getContainer(id);
+        return container.start();
+    }
+
+    async getContainerLogs(id: string) {
+        const container = this.docker.getContainer(id);
+        const buffer = await container.logs({
+            stdout: true,
+            stderr: true,
+            tail: 100,
+            timestamps: true,
+            follow: false
+        }) as Buffer;
+
+        let logs = '';
+        let offset = 0;
+
+        // Docker multiplex stream: [1 byte type, 3 bytes skip, 4 bytes size BE]
+        while (offset < buffer.length) {
+            const type = buffer.readUInt8(offset);
+            // Types: 0=stdin, 1=stdout, 2=stderr
+            if (type > 2) {
+                // Not a multiplexed stream, or we reached something unexpected
+                return { logs: buffer.toString('utf8') };
+            }
+            const size = buffer.readUInt32BE(offset + 4);
+            const content = buffer.toString('utf8', offset + 8, offset + 8 + size);
+            logs += content;
+            offset += 8 + size;
+        }
+
+        return { logs: logs || buffer.toString('utf8') };
+    }
+
+    private formatUptime(seconds: number): string {
+        const days = Math.floor(seconds / (3600 * 24));
+        const hours = Math.floor((seconds % (3600 * 24)) / 3600);
+        const mins = Math.floor((seconds % 3600) / 60);
+        return `${days}d ${hours}h ${mins}m`;
+    }
+}
