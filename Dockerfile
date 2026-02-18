@@ -30,8 +30,7 @@ COPY --from=backend-builder /app/backend/package*.json ./
 RUN npm install --omit=dev
 
 # Copy frontend assets to public folder for NestJS to serve
-# Angular 17 usually builds to dist/<project-name>/browser
-COPY --from=frontend-builder /app/frontend/dist/katrix-monitor/browser/ ./public/
+COPY --from=frontend-builder /app/frontend/dist/ ./public/
 
 # Expose port 4200
 EXPOSE 4200
