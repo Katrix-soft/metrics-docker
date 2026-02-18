@@ -38,10 +38,11 @@
                                     "maximumError": "5mb"
                                 }
                             ],
-                            "outputHashing": "all",
+                            "outputHashing": "none",
                             "sourceMap": false,
                             "optimization": false,
-                            "buildOptimizer": false
+                            "buildOptimizer": false,
+                            "aot": false
                         },
                         "development": {
                             "buildOptimizer": false,
