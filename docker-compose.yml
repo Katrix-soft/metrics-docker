@@ -24,6 +24,6 @@ services:
     container_name: frontend-metrica
     restart: always
     ports:
-      - "4200:4200"
+      - "4205:4200"
     depends_on:
       - backend-metrica
