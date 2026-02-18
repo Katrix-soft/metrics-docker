@@ -1,10 +1,11 @@
 FROM node:20-alpine as builder
 WORKDIR /app
 COPY frontend/package*.json ./
-RUN npm install
+# Instalación ultra-rápida y que consume menos RAM
+RUN npm ci --quiet
 COPY frontend/ .
-# Usamos el modo development que consume muchísima menos RAM durante el build
-RUN NODE_OPTIONS=--max-old-space-size=1024 ./node_modules/.bin/ng build --configuration development
+# Forzamos un límite de memoria estricto y desactivamos la caché de Angular
+RUN NODE_OPTIONS=--max-old-space-size=800 ./node_modules/.bin/ng build --configuration development --delete-output-path --no-progress
 
 FROM nginx:alpine
 # Instalamos la utilidad para generar contraseñas
