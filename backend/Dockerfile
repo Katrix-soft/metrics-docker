@@ -1,11 +1,12 @@
 FROM node:20-alpine
 WORKDIR /app
-COPY package*.json ./
+# Copiamos desde la raíz del proyecto
+COPY backend/package*.json ./
 RUN npm install
-COPY . .
+COPY backend/ .
 RUN npm run build
 
-# Producción
+# Imagen final
 FROM node:20-alpine
 WORKDIR /app
 ENV NODE_ENV=production

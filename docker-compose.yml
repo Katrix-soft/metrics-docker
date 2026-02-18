@@ -1,9 +1,9 @@
 services:
-  katrix-monitor-backend:
+  backend:
     build:
-      context: ./backend
-      dockerfile: Dockerfile
-    container_name: katrix-monitor-backend
+      context: .
+      dockerfile: backend/Dockerfile
+    container_name: katrix-api
     restart: always
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
@@ -13,27 +13,15 @@ services:
     environment:
       - PORT=3000
       - TZ=UTC
-      - HOST_PROC=/host/proc
-      - HOST_SYS=/host/sys
-      - HOST_ETC=/host/etc
-    deploy:
-      resources:
-        limits:
-          memory: 100M
-          cpus: '0.3'
+    # Sin límites estrictos de CPU/RAM durante el despliegue para evitar errores de Portainer
 
-  katrix-monitor-frontend:
+  frontend:
     build:
-      context: ./frontend
-      dockerfile: Dockerfile
-    container_name: katrix-monitor-frontend
+      context: .
+      dockerfile: frontend/Dockerfile
+    container_name: katrix-web
     restart: always
     ports:
       - "4200:4200"
     depends_on:
-      - katrix-monitor-backend
-    deploy:
-      resources:
-        limits:
-          memory: 30M
-          cpus: '0.2'
+      - backend
