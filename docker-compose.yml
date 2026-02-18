@@ -1,9 +1,9 @@
 services:
-  katrix-monitor:
+  backend-metrica:
     build:
       context: .
-      dockerfile: Dockerfile
-    container_name: katrix-monitor-lite
+      dockerfile: Dockerfile.backend
+    container_name: backend-metrica
     restart: always
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
@@ -11,9 +11,19 @@ services:
       - /sys:/host/sys:ro
       - /etc/os-release:/host/etc/os-release:ro
     environment:
-      - PORT=4200
+      - PORT=3000
       - TZ=UTC
-    # No exponemos puertos al host si el proxy inverso ya usa el 4200.
-    # El proxy lo encontrará por el nombre del servicio en la red de docker.
+    # Internal port for frontend to connect
     expose:
-      - "4200"
+      - "3000"
+
+  frontend-metrica:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+    container_name: frontend-metrica
+    restart: always
+    ports:
+      - "4200:4200"
+    depends_on:
+      - backend-metrica
