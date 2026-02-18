@@ -50,7 +50,8 @@
                             "extractLicenses": false,
                             "sourceMap": false,
                             "namedChunks": false,
-                            "progress": false
+                            "progress": false,
+                            "aot": false
                         }
                     },
                     "defaultConfiguration": "production"
