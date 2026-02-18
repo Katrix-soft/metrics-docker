@@ -10,8 +10,10 @@ services:
       - /proc:/host/proc:ro
       - /sys:/host/sys:ro
       - /etc/os-release:/host/etc/os-release:ro
-    ports:
-      - "4200:4200"
+    # Remove ports mapping to host to avoid "port already allocated" 
+    # The reverse proxy will reach it via internal docker network on port 4200
+    # ports:
+    #   - "4200:4200"
     # network_mode: "host" 
     deploy:
       resources:
