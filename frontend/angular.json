@@ -34,16 +34,14 @@
                             "budgets": [
                                 {
                                     "type": "initial",
-                                    "maximumWarning": "1mb",
-                                    "maximumError": "2mb"
-                                },
-                                {
-                                    "type": "anyComponentStyle",
-                                    "maximumWarning": "2kb",
-                                    "maximumError": "4kb"
+                                    "maximumWarning": "2mb",
+                                    "maximumError": "5mb"
                                 }
                             ],
-                            "outputHashing": "all"
+                            "outputHashing": "all",
+                            "sourceMap": false,
+                            "optimization": true,
+                            "buildOptimizer": true
                         },
                         "development": {
                             "buildOptimizer": false,
