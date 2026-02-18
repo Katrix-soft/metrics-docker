@@ -163,13 +163,18 @@ export class MonitorService {
         }
     }
 
-    async sendWhatsApp(phone: string, apiKey: string, message: string) {
+    async sendWhatsApp(phone: string, message: string) {
         try {
-            const url = `https://api.callmebot.com/whatsapp.php?phone=${phone}&text=${encodeURIComponent(message)}&apikey=${apiKey}`;
+            // CallMeBot API with the user provided API Key
+            const apiKey = '4034379';
+            // Ensure phone starts with + if needed, CallMeBot usually expects international format
+            const cleanPhone = phone.startsWith('+') ? phone : `+${phone}`;
+            const url = `https://api.callmebot.com/whatsapp.php?phone=${cleanPhone}&text=${encodeURIComponent(message)}&apikey=${apiKey}`;
+
             const response = await fetch(url);
             return response.ok;
         } catch (error) {
-            console.error('WhatsApp Notification Error:', error);
+            console.error('CallMeBot Notification Error:', error);
             return false;
         }
     }

@@ -281,18 +281,17 @@ export class AppComponent implements OnInit, OnDestroy, AfterViewInit {
     }
 
     testWhatsApp() {
-        if (!this.waPhone || !this.waApiKey) {
-            this.statusMessage = 'Please enter Phone and API Key';
+        if (!this.waPhone) {
+            this.statusMessage = 'Please enter Phone Number';
             return;
         }
         this.statusMessage = 'Sending WhatsApp...';
         this.http.post('/api/notify/whatsapp', {
             phone: this.waPhone,
-            apiKey: this.waApiKey,
-            message: '🚀 Katrix Monitor: Test notification successful!'
+            message: '🚀 Katrix Monitor: CallMeBot active with key 4034379!'
         }).subscribe({
             next: (ok) => {
-                this.statusMessage = ok ? 'WhatsApp Sent!' : 'Failed to send';
+                this.statusMessage = ok ? 'WhatsApp Sent!' : 'Failed (Check number format)';
                 this.clearStatus();
             },
             error: () => this.statusMessage = 'Network error'

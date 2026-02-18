@@ -255,23 +255,20 @@
             <div class="modal-body" style="background: var(--card-bg); font-family: inherit;">
                 <p style="margin-bottom: 1rem; font-size: 0.9rem;">Receive critical system alerts directly on your
                     phone.</p>
-                <div style="margin-bottom: 1rem;">
+                <div style="margin-bottom: 1.5rem;">
+                    <h4 style="margin-bottom: 1rem; color: #25d366;">🟢 WHATSAPP (CallMeBot)</h4>
+                    <p style="font-size: 0.75rem; color: var(--secondary-text); margin-bottom: 0.8rem;">
+                        Using provided API Key: <strong>4034379</strong>
+                    </p>
                     <label style="display: block; margin-bottom: 0.5rem; color: var(--secondary-text);">Phone Number
                         (Intl format)</label>
-                    <input type="text" [(ngModel)]="waPhone" placeholder="+549261XXXXXXX" class="search-input"
+                    <input type="text" [(ngModel)]="waPhone" placeholder="+549XXXXXXXX" class="search-input"
                         style="width: 100%; border: 1px solid #30363d;">
+                    <button (click)="testWhatsApp()" class="pause-btn"
+                        style="width: 100%; margin-top: 1rem; background: #25d366; color: black; border: none; font-weight: bold;">
+                        TEST WHATSAPP MESSAGE
+                    </button>
                 </div>
-                <div style="margin-bottom: 1rem;">
-                    <label style="display: block; margin-bottom: 0.5rem; color: var(--secondary-text);">CallMeBot API
-                        Key</label>
-                    <input type="text" [(ngModel)]="waApiKey" placeholder="123456" class="search-input"
-                        style="width: 100%; border: 1px solid #30363d;">
-                    <small style="color: var(--accent-color); cursor: pointer;"
-                        onclick="window.open('https://www.callmebot.com/blog/free-api-whatsapp-messages/', '_blank')">
-                        Get your FREE API Key here
-                    </small>
-                </div>
-                </button>
 
                 <div style="margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid #30363d;">
                     <h4 style="margin-bottom: 1rem; color: #25d366;">🟢 WHATSAPP (Personal - no group)</h4>
