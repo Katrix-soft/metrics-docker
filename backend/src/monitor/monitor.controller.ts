@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Param } from '@nestjs/common';
+import { Controller, Get, Post, Param, Body } from '@nestjs/common';
 import { MonitorService } from './monitor.service';
 
 @Controller('api')
@@ -33,5 +33,13 @@ export class MonitorController {
     @Get('docker/logs/:id')
     async getLogs(@Param('id') id: string) {
         return this.monitorService.getContainerLogs(id);
+    }
+
+    @Post('docker/update/:id')
+    async updateResources(
+        @Param('id') id: string,
+        @Body() resources: { memoryLimit: number; cpuLimit: number }
+    ) {
+        return this.monitorService.updateResources(id, resources.memoryLimit, resources.cpuLimit);
     }
 }

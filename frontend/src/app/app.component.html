@@ -30,7 +30,8 @@
     </header>
 
     <!-- Terminal Section -->
-    <div class="card" *ngIf="showTerminal" style="margin-bottom: 2rem; padding: 0; background: #000; overflow: hidden; height: 500px;">
+    <div class="card" *ngIf="showTerminal"
+        style="margin-bottom: 2rem; padding: 0; background: #000; overflow: hidden; height: 500px;">
         <div class="card-title" style="padding: 1rem; background: #1a1a1a;">SECURE LINUX TERMINAL</div>
         <iframe src="/terminal/" style="width: 100%; height: calc(100% - 40px); border: none;"></iframe>
     </div>
@@ -162,6 +163,13 @@
                                             d="M4.5 5a.5.5 0 0 0 0 1h7a.5.5 0 0 0 0-1h-7zm0 2.5a.5.5 0 0 0 0 1h7a.5.5 0 0 0 0-1h-7zm0 2.5a.5.5 0 0 0 0 1h4a.5.5 0 0 0 0-1h-4z" />
                                     </svg>
                                 </button>
+                                <button (click)="openEditModal(container)" class="action-btn" title="Edit Resources"
+                                    style="background: #2ea44f;">
+                                    <svg width="14" height="14" fill="currentColor" viewBox="0 0 16 16">
+                                        <path
+                                            d="M12.854.146a.5.5 0 0 0-.707 0L10.5 1.793 14.207 5.5l1.647-1.646a.5.5 0 0 0 0-.708l-3-3zm.646 6.061L9.793 2.5 3.293 9H3.5a.5.5 0 0 1 .5.5v.5h.5a.5.5 0 0 1 .5.5v.5h.5a.5.5 0 0 1 .5.5v.5h.5a.5.5 0 0 1 .5.5v.207l6.5-6.5zm-7.468 7.468A.5.5 0 0 1 6 13.5V13h-.5a.5.5 0 0 1-.5-.5V12h-.5a.5.5 0 0 1-.5-.5V11h-.5a.5.5 0 0 1-.5-.5V10h-.5a.499.499 0 0 1-.175-.032l-.179.178a.5.5 0 0 0-.11.168l-2 5a.5.5 0 0 0 .65.65l5-2a.5.5 0 0 0 .168-.11l.178-.178z" />
+                                    </svg>
+                                </button>
                             </div>
                         </td>
                     </tr>
@@ -183,6 +191,38 @@
             </div>
             <div class="modal-body">
                 <pre>{{ currentLogs }}</pre>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" *ngIf="showEditModal" (click)="showEditModal = false">
+        <div class="modal" (click)="$event.stopPropagation()">
+            <div class="modal-header">
+                <h3>EDIT RESOURCES: {{ selectedContainer?.name }}</h3>
+                <button class="close-btn" (click)="showEditModal = false">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div style="margin-bottom: 1.5rem;">
+                    <label style="display: block; margin-bottom: 0.5rem; color: var(--secondary-text);">Memory Limit
+                        (MB)</label>
+                    <input type="number" [(ngModel)]="selectedMemory" class="search-input"
+                        style="width: 100%; border: 1px solid #30363d;">
+                    <small style="color: #8b949e;">Used current: {{ selectedContainer?.memory }}</small>
+                </div>
+                <div style="margin-bottom: 1.5rem;">
+                    <label style="display: block; margin-bottom: 0.5rem; color: var(--secondary-text);">CPU Limit
+                        (%)</label>
+                    <input type="number" [(ngModel)]="selectedCpu" class="search-input"
+                        style="width: 100%; border: 1px solid #30363d;">
+                    <small style="color: #8b949e;">E.g. 50 = 0.5 Cores</small>
+                </div>
+                <button (click)="updateResources()" class="pause-btn"
+                    style="width: 100%; margin-top: 1rem; background: #238636;">
+                    SAVE & APPLY LIMITS
+                </button>
+                <div style="margin-top: 1rem; font-size: 0.8rem; color: #f85149;">
+                    Note: This updates the running container. Update your docker-compose.yml for persistence.
+                </div>
             </div>
         </div>
     </div>

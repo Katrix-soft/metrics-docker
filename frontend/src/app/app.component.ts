@@ -23,6 +23,9 @@ export class AppComponent implements OnInit, OnDestroy, AfterViewInit {
     searchTerm = '';
     logInterval: any;
     showTerminal = false;
+    showEditModal = false;
+    selectedMemory = 128;
+    selectedCpu = 50;
 
     @ViewChild('cpuChart') cpuChartRef!: ElementRef;
     @ViewChild('memChart') memChartRef!: ElementRef;
@@ -191,6 +194,31 @@ export class AppComponent implements OnInit, OnDestroy, AfterViewInit {
                 this.clearStatus();
             },
             error: () => this.statusMessage = 'Start failed'
+        });
+    }
+
+    openEditModal(container: any) {
+        this.selectedContainer = container;
+        // Parse current memory (e.g. "128.50 MB" -> 128)
+        this.selectedMemory = parseInt(container.memory) || 128;
+        this.selectedCpu = parseInt(container.cpu) || 50;
+        this.showEditModal = true;
+    }
+
+    updateResources() {
+        if (!this.selectedContainer) return;
+        this.statusMessage = `Updating resources for ${this.selectedContainer.name}...`;
+        this.http.post(`/api/docker/update/${this.selectedContainer.id}`, {
+            memoryLimit: this.selectedMemory,
+            cpuLimit: this.selectedCpu
+        }).subscribe({
+            next: () => {
+                this.statusMessage = 'Update successful';
+                this.showEditModal = false;
+                this.fetchData();
+                this.clearStatus();
+            },
+            error: () => this.statusMessage = 'Update failed'
         });
     }
 

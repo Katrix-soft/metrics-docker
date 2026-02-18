@@ -136,6 +136,23 @@ export class MonitorService {
         return { logs: logs || buffer.toString('utf8') };
     }
 
+    async updateResources(id: string, memoryLimit: number, cpuLimit: number) {
+        const container = this.docker.getContainer(id);
+        // memoryLimit in MB, cpuLimit in percentage (e.g. 50 for 0.5 cores)
+        const updateConfig: any = {};
+
+        if (memoryLimit > 0) {
+            updateConfig.Memory = memoryLimit * 1024 * 1024;
+        }
+
+        if (cpuLimit > 0) {
+            // NanoCPUs is (cpuLimit / 100) * 10^9
+            updateConfig.NanoCPUs = (cpuLimit / 100) * 1000000000;
+        }
+
+        return container.update(updateConfig);
+    }
+
     private formatUptime(seconds: number): string {
         const days = Math.floor(seconds / (3600 * 24));
         const hours = Math.floor((seconds % (3600 * 24)) / 3600);
