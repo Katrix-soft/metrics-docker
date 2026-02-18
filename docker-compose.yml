@@ -1,8 +1,8 @@
 services:
-  katrix-monitor-backend:
+  api:
     build:
-      context: ./backend
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: Dockerfile.backend
     container_name: katrix-api
     restart: always
     volumes:
@@ -12,15 +12,14 @@ services:
       - /etc/os-release:/host/etc/os-release:ro
     environment:
       - PORT=3000
-      - TZ=UTC
 
-  katrix-monitor-frontend:
+  web:
     build:
-      context: ./frontend
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: Dockerfile.frontend
     container_name: katrix-web
     restart: always
     ports:
       - "4200:4200"
     depends_on:
-      - katrix-monitor-backend
+      - api
