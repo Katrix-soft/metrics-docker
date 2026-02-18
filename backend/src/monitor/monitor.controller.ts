@@ -57,4 +57,9 @@ export class MonitorController {
     async testWhin(@Body() body: { message: string }) {
         return this.monitorService.sendWhin(body.message);
     }
+
+    @Post('system/optimize')
+    async optimizeSystem() {
+        return this.monitorService.optimizeSystem();
+    }
 }

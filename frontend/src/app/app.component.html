@@ -29,7 +29,11 @@
                     ({{ getCapacityInfo().remaining }}MB FREE)
                 </small>
             </div>
-            <button class="pause-btn" (click)="togglePause()" [class.paused]="paused">
+            <button class="pause-btn" (click)="optimizeSystem()"
+                style="margin-left: 0.5rem; background: #238636; border: 1px solid #1f672a; box-shadow: 0 0 10px rgba(35, 134, 54, 0.4);">
+                🚀 MAGIC OPTIMIZE
+            </button>
+            <button class="pause-btn" (click)="togglePause()" [class.paused]="paused" style="margin-left: 0.5rem;">
                 {{ paused ? 'RESUME' : 'PAUSE' }}
             </button>
             <button class="pause-btn" (click)="toggleTerminal()" style="margin-left: 0.5rem; background: #6f42c1;">

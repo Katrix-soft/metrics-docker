@@ -325,6 +325,21 @@ export class AppComponent implements OnInit, OnDestroy, AfterViewInit {
         });
     }
 
+    optimizeSystem() {
+        this.statusMessage = '🚀 Optimizing system (Docker Prune)...';
+        this.http.post('/api/system/optimize', {}).subscribe({
+            next: (res: any) => {
+                this.statusMessage = res.success ? '✨ Optimization Complete!' : '❌ Optimization failed';
+                this.fetchData();
+                this.clearStatus();
+            },
+            error: () => {
+                this.statusMessage = '❌ Error during optimization';
+                this.clearStatus();
+            }
+        });
+    }
+
     clearStatus() {
         setTimeout(() => this.statusMessage = '', 3000);
     }

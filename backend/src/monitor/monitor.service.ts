@@ -39,13 +39,15 @@ export class MonitorService {
                 free: (mem.free / 1024 / 1024 / 1024).toFixed(2) + ' GB',
                 percent: ((mem.used / mem.total) * 100).toFixed(2),
             },
-            disk: fs.map(d => ({
-                fs: d.fs,
-                size: (d.size / 1024 / 1024 / 1024).toFixed(2) + ' GB',
-                used: (d.used / 1024 / 1024 / 1024).toFixed(2) + ' GB',
-                available: (d.available / 1024 / 1024 / 1024).toFixed(2) + ' GB',
-                use: d.use,
-            })),
+            disk: fs
+                .filter(d => !d.fs.includes('loop') && !d.fs.includes('tmpfs'))
+                .slice(0, 1) // Only show the main disk as requested
+                .map(d => ({
+                    fs: d.fs,
+                    size: (d.size / 1024 / 1024 / 1024).toFixed(2) + ' GB',
+                    used: (d.used / 1024 / 1024 / 1024).toFixed(2) + ' GB',
+                    use: d.use.toFixed(2),
+                })),
             network: net.map(n => ({
                 iface: n.iface,
                 rx: (n.rx_sec / 1024).toFixed(2) + ' KB/s',
@@ -53,6 +55,20 @@ export class MonitorService {
             })),
             uptime: this.formatUptime(time.uptime),
         };
+    }
+
+    async optimizeSystem() {
+        try {
+            // This runs a 'Docker Prune' to free up RAM/Disk from unused resources
+            // It's the safest way to "clean" a Docker environment automatically
+            await this.docker.pruneContainers();
+            await this.docker.pruneImages({ dall: true });
+            await this.docker.pruneNetworks();
+            return { success: true, message: 'Docker environment pruned and optimized' };
+        } catch (error) {
+            console.error('Optimization error:', error);
+            return { success: false, message: error.message };
+        }
     }
 
     async getDockerStats() {
