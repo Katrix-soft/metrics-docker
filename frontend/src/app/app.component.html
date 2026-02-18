@@ -271,10 +271,43 @@
                         Get your FREE API Key here
                     </small>
                 </div>
-                <button (click)="testWhatsApp()" class="pause-btn"
-                    style="width: 100%; margin-top: 1rem; background: #25d366; color: black; border: none;">
-                    TEST NOTIFICATION
                 </button>
+
+                <div style="margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid #30363d;">
+                    <h4 style="margin-bottom: 1rem; color: #25d366;">🟢 WHATSAPP (RapidAPI - Whin)</h4>
+                    <p style="font-size: 0.75rem; color: var(--secondary-text); margin-bottom: 0.8rem;">
+                        Configured with your RapidAPI Key. Make sure you are in the WhatsApp group.
+                    </p>
+                    <button (click)="testWhin()" class="pause-btn"
+                        style="width: 100%; height: 45px; background: #25d366; color: black; border: none; font-size: 1rem;">
+                        TEST WHATSAPP MESSAGE
+                    </button>
+                </div>
+
+                <div style="margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid #30363d;">
+                    <h4 style="margin-bottom: 1rem; color: #0088cc;">🔵 TELEGRAM BOT</h4>
+                    <div style="margin-bottom: 1rem;">
+                        <label style="display: block; margin-bottom: 0.5rem; color: var(--secondary-text);">Bot
+                            Token</label>
+                        <input type="text" [(ngModel)]="tgToken" placeholder="123456:ABC-DEF..." class="search-input"
+                            style="width: 100%; border: 1px solid #30363d;">
+                    </div>
+                    <div style="margin-bottom: 1rem;">
+                        <label style="display: block; margin-bottom: 0.5rem; color: var(--secondary-text);">Chat
+                            ID</label>
+                        <input type="text" [(ngModel)]="tgChatId" placeholder="987654321" class="search-input"
+                            style="width: 100%; border: 1px solid #30363d;">
+                        <small style="color: var(--secondary-text); display: block; margin-top: 0.3rem;">
+                            Tip: Send /id to <span style="color: var(--accent-color); cursor: pointer;"
+                                onclick="window.open('https://t.me/userinfobot', '_blank')">@userinfobot</span> to get
+                            your Chat ID.
+                        </small>
+                    </div>
+                    <button (click)="testTelegram()" class="pause-btn"
+                        style="width: 100%; margin-top: 1rem; background: #0088cc; color: white; border: none;">
+                        TEST TELEGRAM
+                    </button>
+                </div>
             </div>
         </div>
     </div>

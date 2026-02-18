@@ -32,6 +32,13 @@ export class AppComponent implements OnInit, OnDestroy, AfterViewInit {
     waPhone = '';
     waApiKey = '';
 
+    // Telegram settings
+    tgToken = '';
+    tgChatId = '';
+
+    // Whin settings (Alt WhatsApp)
+    whinToken = '';
+
     @ViewChild('cpuChart') cpuChartRef!: ElementRef;
     @ViewChild('memChart') memChartRef!: ElementRef;
 
@@ -286,6 +293,38 @@ export class AppComponent implements OnInit, OnDestroy, AfterViewInit {
         }).subscribe({
             next: (ok) => {
                 this.statusMessage = ok ? 'WhatsApp Sent!' : 'Failed to send';
+                this.clearStatus();
+            },
+            error: () => this.statusMessage = 'Network error'
+        });
+    }
+
+    testTelegram() {
+        if (!this.tgToken || !this.tgChatId) {
+            this.statusMessage = 'Please enter Bot Token and Chat ID';
+            return;
+        }
+        this.statusMessage = 'Sending Telegram...';
+        this.http.post('/api/notify/telegram', {
+            botToken: this.tgToken,
+            chatId: this.tgChatId,
+            message: '🚀 Katrix Monitor: Notification system active on Telegram!'
+        }).subscribe({
+            next: (ok) => {
+                this.statusMessage = ok ? 'Telegram Sent!' : 'Failed to send';
+                this.clearStatus();
+            },
+            error: () => this.statusMessage = 'Network error'
+        });
+    }
+
+    testWhin() {
+        this.statusMessage = 'Sending Whin (WhatsApp)...';
+        this.http.post('/api/notify/whin', {
+            message: '🚀 Katrix Monitor: WhatsApp RapidAPI active!'
+        }).subscribe({
+            next: (ok) => {
+                this.statusMessage = ok ? 'Whin Sent!' : 'Failed (Check Group Setup)';
                 this.clearStatus();
             },
             error: () => this.statusMessage = 'Network error'

@@ -47,4 +47,14 @@ export class MonitorController {
     async testWhatsApp(@Body() body: { phone: string; apiKey: string; message: string }) {
         return this.monitorService.sendWhatsApp(body.phone, body.apiKey, body.message);
     }
+
+    @Post('notify/telegram')
+    async testTelegram(@Body() body: { botToken: string; chatId: string; message: string }) {
+        return this.monitorService.sendTelegram(body.botToken, body.chatId, body.message);
+    }
+
+    @Post('notify/whin')
+    async testWhin(@Body() body: { message: string }) {
+        return this.monitorService.sendWhin(body.message);
+    }
 }

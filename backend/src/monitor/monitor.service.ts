@@ -174,6 +174,40 @@ export class MonitorService {
         }
     }
 
+    async sendTelegram(botToken: string, chatId: string, message: string) {
+        try {
+            const url = `https://api.telegram.org/bot${botToken}/sendMessage`;
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ chat_id: chatId, text: message })
+            });
+            return response.ok;
+        } catch (error) {
+            console.error('Telegram Notification Error:', error);
+            return false;
+        }
+    }
+
+    async sendWhin(message: string) {
+        try {
+            // Whin via RapidAPI (Configured by User)
+            const response = await fetch('https://whin2.p.rapidapi.com/send2group', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'x-rapidapi-host': 'whin2.p.rapidapi.com',
+                    'x-rapidapi-key': 'c3015f1769mshb086ce09484997ep13c1ddjsne0b15370aa68'
+                },
+                body: JSON.stringify({ text: message })
+            });
+            return response.ok;
+        } catch (error) {
+            console.error('Whin RapidAPI Error:', error);
+            return false;
+        }
+    }
+
     private formatUptime(seconds: number): string {
         const days = Math.floor(seconds / (3600 * 24));
         const hours = Math.floor((seconds % (3600 * 24)) / 3600);
