@@ -20,6 +20,15 @@
                 <span class="label">UPTIME</span>
                 <span class="value">{{ system?.uptime }}</span>
             </div>
+            <div class="summary-item capacity-status" [class]="getCapacityInfo().status.toLowerCase()">
+                <span class="label">STACK CAPACITY</span>
+                <span class="value" style="color: var(--accent-color); font-weight: bold;">
+                    ≈ {{ getCapacityInfo().stacks }} MORE STACKS
+                </span>
+                <small style="font-size: 0.6rem; display: block; opacity: 0.7;">
+                    ({{ getCapacityInfo().remaining }}MB FREE)
+                </small>
+            </div>
             <button class="pause-btn" (click)="togglePause()" [class.paused]="paused">
                 {{ paused ? 'RESUME' : 'PAUSE' }}
             </button>

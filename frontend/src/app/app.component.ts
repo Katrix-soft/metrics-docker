@@ -88,6 +88,34 @@ export class AppComponent implements OnInit, OnDestroy, AfterViewInit {
         return 'Recommended limit: 128MB.';
     }
 
+    getCapacityInfo(): { remaining: number, stacks: number, status: string } {
+        if (!this.system || !this.system.memory) return { remaining: 0, stacks: 0, status: 'Unknown' };
+
+        // Host total RAM in MB (2GB VPS is approx 1890MB-2048MB)
+        const totalHostMB = parseFloat(this.system.memory.total) * 1024;
+
+        // Sum current limits of all containers
+        const totalLimitsMB = this.docker.reduce((acc: number, c: any) => {
+            return acc + (parseFloat(c.memory) || 0);
+        }, 0);
+
+        const remainingMB = totalHostMB - totalLimitsMB;
+
+        // Assuming a standard ERP stack (Backend+Frontend+DB) takes ~256MB-384MB
+        const standardStackMB = 256;
+        const potentialStacks = Math.floor(remainingMB / standardStackMB);
+
+        let status = 'HEALTHY';
+        if (remainingMB < 256) status = 'CRITICAL';
+        else if (remainingMB < 512) status = 'WARNING';
+
+        return {
+            remaining: Math.max(0, Math.round(remainingMB)),
+            stacks: Math.max(0, potentialStacks),
+            status: status
+        };
+    }
+
     getLogs(container: any) {
         this.selectedContainer = container;
         this.fetchLogs(container.id);

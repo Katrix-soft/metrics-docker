@@ -61,6 +61,10 @@ h3 {
   flex-direction: column;
 }
 
+.capacity-status.healthy { border-left: 3px solid #3fb950; padding-left: 0.8rem; text-align: left; }
+.capacity-status.warning { border-left: 3px solid #d29922; padding-left: 0.8rem; text-align: left; }
+.capacity-status.critical { border-left: 3px solid #f85149; padding-left: 0.8rem; text-align: left; }
+
 .summary-item .label {
   font-size: 0.7rem;
   color: var(--secondary-text);
