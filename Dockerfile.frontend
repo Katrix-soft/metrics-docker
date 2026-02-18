@@ -6,13 +6,17 @@ RUN npm ci --quiet
 COPY frontend/ .
 # ESTRATEGIA DEFINITIVA: 1 solo hilo, 512MB de RAM, modo desarrollo
 RUN NG_BUILD_MAX_WORKERS=1 NODE_OPTIONS=--max-old-space-size=512 npm run build -- --no-progress
+# Angular 17 a veces crea una subcarpeta 'browser'. La aplanamos.
+RUN if [ -d "dist/browser" ]; then mv dist/browser/* dist/ && rm -rf dist/browser; fi
+# Si se creó una carpeta con el nombre del proyecto, la aplanamos también.
+RUN if [ -d "dist/katrix-monitor" ]; then mv dist/katrix-monitor/* dist/ && rm -rf dist/katrix-monitor; fi
 
 FROM nginx:alpine
 # Instalamos la utilidad para generar contraseñas
 RUN apk add --no-cache apache2-utils
 
-# Ruta fija garantizada: dist/app
-COPY --from=builder /app/dist/app /usr/share/nginx/html
+# Copiamos todo el contenido de dist a la raíz de Nginx
+COPY --from=builder /app/dist /usr/share/nginx/html
 COPY frontend/nginx.conf /etc/nginx/conf.d/default.conf
 
 # Script para generar la contraseña en el arranque
