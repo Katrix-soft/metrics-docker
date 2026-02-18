@@ -18,25 +18,22 @@ RUN npm run build
 FROM node:20-alpine
 WORKDIR /app
 ENV NODE_ENV=production
-
-# Install essential tools for system monitoring
 RUN apk add --no-cache tzdata procps util-linux
 
-# Copy backend files
+# Copy backend
 COPY --from=backend-builder /app/backend/dist ./dist
 COPY --from=backend-builder /app/backend/package*.json ./
-
-# Install only production dependencies to keep it light
 RUN npm install --omit=dev
 
-# Copy frontend assets to public folder for NestJS to serve
-COPY --from=frontend-builder /app/frontend/dist/ ./public/
+# Copy frontend to public folder (served by NestJS)
+# En Angular 17 con builder estándar los archivos están en dist/
+COPY --from=frontend-builder /app/frontend/dist ./public
 
-# Expose port 4200
 EXPOSE 4200
+ENV PORT=4200
 
 # Metadata
-LABEL maintainer="Antigravity"
-LABEL description="Katrix Monitor Lite - Ultra-lite VPS Monitoring"
+LABEL maintainer="Katrix"
+LABEL description="Katrix Monitor Lite - Monolithic Build"
 
 CMD ["node", "dist/main"]

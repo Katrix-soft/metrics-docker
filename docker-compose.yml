@@ -1,9 +1,9 @@
 services:
-  api:
+  katrix-monitor:
     build:
       context: .
-      dockerfile: Dockerfile.backend
-    container_name: katrix-api
+      dockerfile: Dockerfile
+    container_name: katrix-monitor-lite
     restart: always
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
@@ -11,15 +11,9 @@ services:
       - /sys:/host/sys:ro
       - /etc/os-release:/host/etc/os-release:ro
     environment:
-      - PORT=3000
-
-  web:
-    build:
-      context: .
-      dockerfile: Dockerfile.frontend
-    container_name: katrix-web
-    restart: always
-    ports:
-      - "4200:4200"
-    depends_on:
-      - api
+      - PORT=4200
+      - TZ=UTC
+    # No exponemos puertos al host si el proxy inverso ya usa el 4200.
+    # El proxy lo encontrará por el nombre del servicio en la red de docker.
+    expose:
+      - "4200"
