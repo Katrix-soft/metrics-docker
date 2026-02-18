@@ -71,6 +71,23 @@ export class AppComponent implements OnInit, OnDestroy, AfterViewInit {
         this.showTerminal = !this.showTerminal;
     }
 
+    getRecommendation(name: string): string {
+        const n = name.toLowerCase();
+        if (n.includes('web') || n.includes('frontend') || n.includes('proxy') || n.includes('nginx')) {
+            return 'Service identified as Static/Proxy. Recommended: 16MB - 32MB.';
+        }
+        if (n.includes('backend') || n.includes('api')) {
+            return 'Service identified as Backend. Recommended: 128MB - 256MB.';
+        }
+        if (n.includes('db') || n.includes('postgres') || n.includes('sql') || n.includes('mongo')) {
+            return 'Service identified as Database. Recommended: 256MB+ for stability.';
+        }
+        if (n.includes('redis')) {
+            return 'Service identified as Cache. Recommended: 32MB - 64MB.';
+        }
+        return 'Recommended limit: 128MB.';
+    }
+
     getLogs(container: any) {
         this.selectedContainer = container;
         this.fetchLogs(container.id);

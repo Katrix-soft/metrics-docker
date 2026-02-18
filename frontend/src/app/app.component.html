@@ -208,7 +208,11 @@
                     <input type="number" [(ngModel)]="selectedMemory" min="6" step="1" class="search-input"
                         style="width: 100%; border: 1px solid #30363d;">
                     <small style="color: #8b949e;">Used current: {{ selectedContainer?.memory }}</small>
-                    <div *ngIf="selectedMemory < 6" style="color: #f85149; font-size: 0.7rem; margin-top: 0.2rem;">
+                    <div
+                        style="color: var(--accent-color); font-size: 0.75rem; margin-top: 0.4rem; padding: 0.5rem; background: rgba(88, 166, 255, 0.1); border-radius: 4px;">
+                        💡 {{ getRecommendation(selectedContainer?.name || '') }}
+                    </div>
+                    <div *ngIf="selectedMemory < 6" style="color: #f85149; font-size: 0.7rem; margin-top: 0.5rem;">
                         Docker minimum is 6MB.
                     </div>
                 </div>
