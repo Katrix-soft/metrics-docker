@@ -13,7 +13,7 @@ COPY --from=builder /app/dist /usr/share/nginx/html
 COPY frontend/nginx.conf /etc/nginx/conf.d/default.conf
 
 # Script para generar la contraseña en el arranque
-RUN printf "admin:$(openssl passwd -1 katrix2026)\n" > /etc/nginx/.htpasswd
+RUN htpasswd -b -c /etc/nginx/.htpasswd admin katrix2026
 
 EXPOSE 4200
 CMD ["nginx", "-g", "daemon off;"]
