@@ -11,8 +11,8 @@ FROM nginx:alpine
 # Instalamos la utilidad para generar contraseñas
 RUN apk add --no-cache apache2-utils
 
-# Copiamos desde la subcarpeta del proyecto (Angular crea dist/nombre-del-proyecto)
-COPY --from=builder /app/dist/katrix-monitor /usr/share/nginx/html
+# Usamos la ruta raíz de dist para mayor compatibilidad
+COPY --from=builder /app/dist /usr/share/nginx/html
 COPY frontend/nginx.conf /etc/nginx/conf.d/default.conf
 
 # Script para generar la contraseña en el arranque
