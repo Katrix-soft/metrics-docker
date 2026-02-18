@@ -3,7 +3,8 @@ WORKDIR /app
 COPY frontend/package*.json ./
 RUN npm install
 COPY frontend/ .
-RUN NODE_OPTIONS=--max-old-space-size=1536 npm run build
+# Usamos el modo development que consume muchísima menos RAM durante el build
+RUN NODE_OPTIONS=--max-old-space-size=1024 ./node_modules/.bin/ng build --configuration development
 
 FROM nginx:alpine
 # Instalamos la utilidad para generar contraseñas
