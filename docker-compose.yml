@@ -1,28 +1,39 @@
 services:
-  katrix-monitor:
+  katrix-monitor-backend:
     build:
-      context: .
+      context: ./backend
       dockerfile: Dockerfile
-    container_name: katrix-monitor-lite
+    container_name: katrix-monitor-backend
     restart: always
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       - /proc:/host/proc:ro
       - /sys:/host/sys:ro
       - /etc/os-release:/host/etc/os-release:ro
-    # Remove ports mapping to host to avoid "port already allocated" 
-    # The reverse proxy will reach it via internal docker network on port 4200
-    # ports:
-    #   - "4200:4200"
-    # network_mode: "host" 
-    deploy:
-      resources:
-        limits:
-          memory: 150M
-          cpus: '0.5'
     environment:
-      - PORT=4200
+      - PORT=3000
       - TZ=UTC
       - HOST_PROC=/host/proc
       - HOST_SYS=/host/sys
       - HOST_ETC=/host/etc
+    deploy:
+      resources:
+        limits:
+          memory: 100M
+          cpus: '0.3'
+
+  katrix-monitor-frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: katrix-monitor-lite
+    restart: always
+    ports:
+      - "4200:4200"
+    depends_on:
+      - katrix-monitor-backend
+    deploy:
+      resources:
+        limits:
+          memory: 30M
+          cpus: '0.2'
