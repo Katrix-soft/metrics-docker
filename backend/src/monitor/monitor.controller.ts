@@ -42,4 +42,9 @@ export class MonitorController {
     ) {
         return this.monitorService.updateResources(id, resources.memoryLimit, resources.cpuLimit);
     }
+
+    @Post('notify/whatsapp')
+    async testWhatsApp(@Body() body: { phone: string; apiKey: string; message: string }) {
+        return this.monitorService.sendWhatsApp(body.phone, body.apiKey, body.message);
+    }
 }

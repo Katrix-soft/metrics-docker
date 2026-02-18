@@ -24,8 +24,13 @@ export class AppComponent implements OnInit, OnDestroy, AfterViewInit {
     logInterval: any;
     showTerminal = false;
     showEditModal = false;
+    showSettings = false;
     selectedMemory = 128;
     selectedCpu = 50;
+
+    // WhatsApp settings
+    waPhone = '';
+    waApiKey = '';
 
     @ViewChild('cpuChart') cpuChartRef!: ElementRef;
     @ViewChild('memChart') memChartRef!: ElementRef;
@@ -91,27 +96,23 @@ export class AppComponent implements OnInit, OnDestroy, AfterViewInit {
     getCapacityInfo(): { remaining: number, stacks: number, status: string } {
         if (!this.system || !this.system.memory) return { remaining: 0, stacks: 0, status: 'Unknown' };
 
-        // Host total RAM in MB (2GB VPS is approx 1890MB-2048MB)
-        const totalHostMB = parseFloat(this.system.memory.total) * 1024;
+        // Host Available RAM in MB (Real free RAM including buffers)
+        const availableMB = parseFloat(this.system.memory.available) * 1024;
 
-        // Sum current limits of all containers
-        const totalLimitsMB = this.docker.reduce((acc: number, c: any) => {
-            return acc + (parseFloat(c.memory) || 0);
-        }, 0);
+        // We reserve a "Safety Margin" of 150MB for the OS basics
+        const safeMB = Math.max(0, availableMB - 150);
 
-        const remainingMB = totalHostMB - totalLimitsMB;
-
-        // Assuming a standard ERP stack (Backend+Frontend+DB) takes ~256MB-384MB
+        // Assuming a standard ERP stack (Backend+Frontend+DB) takes ~256MB
         const standardStackMB = 256;
-        const potentialStacks = Math.floor(remainingMB / standardStackMB);
+        const potentialStacks = Math.floor(safeMB / standardStackMB);
 
         let status = 'HEALTHY';
-        if (remainingMB < 256) status = 'CRITICAL';
-        else if (remainingMB < 512) status = 'WARNING';
+        if (safeMB < 300) status = 'CRITICAL';
+        else if (safeMB < 600) status = 'WARNING';
 
         return {
-            remaining: Math.max(0, Math.round(remainingMB)),
-            stacks: Math.max(0, potentialStacks),
+            remaining: Math.round(safeMB),
+            stacks: potentialStacks,
             status: status
         };
     }
@@ -263,7 +264,31 @@ export class AppComponent implements OnInit, OnDestroy, AfterViewInit {
                 this.fetchData();
                 this.clearStatus();
             },
-            error: () => this.statusMessage = 'Update failed'
+            error: (err) => {
+                // Now we capture the real error message from backend
+                const errorMsg = err.error?.message || 'Update failed (Docker limit)';
+                this.statusMessage = `Error: ${errorMsg}`;
+                console.error(err);
+            }
+        });
+    }
+
+    testWhatsApp() {
+        if (!this.waPhone || !this.waApiKey) {
+            this.statusMessage = 'Please enter Phone and API Key';
+            return;
+        }
+        this.statusMessage = 'Sending WhatsApp...';
+        this.http.post('/api/notify/whatsapp', {
+            phone: this.waPhone,
+            apiKey: this.waApiKey,
+            message: '🚀 Katrix Monitor: Test notification successful!'
+        }).subscribe({
+            next: (ok) => {
+                this.statusMessage = ok ? 'WhatsApp Sent!' : 'Failed to send';
+                this.clearStatus();
+            },
+            error: () => this.statusMessage = 'Network error'
         });
     }
 

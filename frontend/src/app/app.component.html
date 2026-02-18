@@ -35,6 +35,9 @@
             <button class="pause-btn" (click)="toggleTerminal()" style="margin-left: 0.5rem; background: #6f42c1;">
                 {{ showTerminal ? 'CLOSE TERMINAL' : 'OPEN TERMINAL' }}
             </button>
+            <button class="pause-btn" (click)="showSettings = true" style="margin-left: 0.5rem; background: #24292f;">
+                ALERT SETTINGS
+            </button>
         </div>
     </header>
 
@@ -239,6 +242,39 @@
                 <div style="margin-top: 1rem; font-size: 0.8rem; color: #f85149;">
                     Note: This updates the running container. Update your docker-compose.yml for persistence.
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" *ngIf="showSettings" (click)="showSettings = false">
+        <div class="modal" (click)="$event.stopPropagation()">
+            <div class="modal-header">
+                <h3>WHATSAPP ALERTS (CallMeBot)</h3>
+                <button class="close-btn" (click)="showSettings = false">&times;</button>
+            </div>
+            <div class="modal-body" style="background: var(--card-bg); font-family: inherit;">
+                <p style="margin-bottom: 1rem; font-size: 0.9rem;">Receive critical system alerts directly on your
+                    phone.</p>
+                <div style="margin-bottom: 1rem;">
+                    <label style="display: block; margin-bottom: 0.5rem; color: var(--secondary-text);">Phone Number
+                        (Intl format)</label>
+                    <input type="text" [(ngModel)]="waPhone" placeholder="+549261XXXXXXX" class="search-input"
+                        style="width: 100%; border: 1px solid #30363d;">
+                </div>
+                <div style="margin-bottom: 1rem;">
+                    <label style="display: block; margin-bottom: 0.5rem; color: var(--secondary-text);">CallMeBot API
+                        Key</label>
+                    <input type="text" [(ngModel)]="waApiKey" placeholder="123456" class="search-input"
+                        style="width: 100%; border: 1px solid #30363d;">
+                    <small style="color: var(--accent-color); cursor: pointer;"
+                        onclick="window.open('https://www.callmebot.com/blog/free-api-whatsapp-messages/', '_blank')">
+                        Get your FREE API Key here
+                    </small>
+                </div>
+                <button (click)="testWhatsApp()" class="pause-btn"
+                    style="width: 100%; margin-top: 1rem; background: #25d366; color: black; border: none;">
+                    TEST NOTIFICATION
+                </button>
             </div>
         </div>
     </div>

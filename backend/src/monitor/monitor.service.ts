@@ -35,6 +35,7 @@ export class MonitorService {
             memory: {
                 total: (mem.total / 1024 / 1024 / 1024).toFixed(2) + ' GB',
                 used: (mem.used / 1024 / 1024 / 1024).toFixed(2) + ' GB',
+                available: (mem.available / 1024 / 1024 / 1024).toFixed(2) + ' GB',
                 free: (mem.free / 1024 / 1024 / 1024).toFixed(2) + ' GB',
                 percent: ((mem.used / mem.total) * 100).toFixed(2),
             },
@@ -145,6 +146,8 @@ export class MonitorService {
                 // Docker minimum is 6MB. If user puts less, we force 6MB.
                 const safeMemory = Math.max(memoryLimit, 6);
                 updateConfig.Memory = Math.floor(safeMemory * 1024 * 1024);
+                // Also set Reservation to avoid potential Docker conflicts
+                updateConfig.MemoryReservation = Math.floor((safeMemory / 2) * 1024 * 1024);
             }
 
             if (cpuLimit > 0) {
@@ -152,9 +155,22 @@ export class MonitorService {
             }
 
             return await container.update(updateConfig);
-        } catch (error) {
+        } catch (error: any) {
             console.error('Docker update error:', error);
-            throw error;
+            // Extracts the specific error from Docker daemon
+            const reason = error.json?.message || error.message || 'Restriccion de Docker';
+            throw new Error(reason);
+        }
+    }
+
+    async sendWhatsApp(phone: string, apiKey: string, message: string) {
+        try {
+            const url = `https://api.callmebot.com/whatsapp.php?phone=${phone}&text=${encodeURIComponent(message)}&apikey=${apiKey}`;
+            const response = await fetch(url);
+            return response.ok;
+        } catch (error) {
+            console.error('WhatsApp Notification Error:', error);
+            return false;
         }
     }
 
