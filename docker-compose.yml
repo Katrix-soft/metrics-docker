@@ -20,8 +20,8 @@ services:
     image: tsl0922/ttyd:latest
     container_name: terminal-metrica
     restart: always
-    # Ejecuta una shell de alpine. Puedes cambiar 'katrix:monitor' por tu usuario:clave deseado
-    command: ttyd -p 7681 -i lo -W bash
+    # Eliminamos -i lo para que Nginx pueda conectar, y usamos 'sh' por compatibilidad
+    command: ttyd -p 7681 -W sh
     environment:
       - TZ=UTC
     expose:
