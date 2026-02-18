@@ -137,20 +137,25 @@ export class MonitorService {
     }
 
     async updateResources(id: string, memoryLimit: number, cpuLimit: number) {
-        const container = this.docker.getContainer(id);
-        // memoryLimit in MB, cpuLimit in percentage (e.g. 50 for 0.5 cores)
-        const updateConfig: any = {};
+        try {
+            const container = this.docker.getContainer(id);
+            const updateConfig: any = {};
 
-        if (memoryLimit > 0) {
-            updateConfig.Memory = memoryLimit * 1024 * 1024;
+            if (memoryLimit > 0) {
+                // Docker minimum is 6MB. If user puts less, we force 6MB.
+                const safeMemory = Math.max(memoryLimit, 6);
+                updateConfig.Memory = Math.floor(safeMemory * 1024 * 1024);
+            }
+
+            if (cpuLimit > 0) {
+                updateConfig.NanoCPUs = Math.floor((cpuLimit / 100) * 1000000000);
+            }
+
+            return await container.update(updateConfig);
+        } catch (error) {
+            console.error('Docker update error:', error);
+            throw error;
         }
-
-        if (cpuLimit > 0) {
-            // NanoCPUs is (cpuLimit / 100) * 10^9
-            updateConfig.NanoCPUs = (cpuLimit / 100) * 1000000000;
-        }
-
-        return container.update(updateConfig);
     }
 
     private formatUptime(seconds: number): string {
