@@ -13,9 +13,19 @@ services:
     environment:
       - PORT=3000
       - TZ=UTC
-    # Internal port for frontend to connect
     expose:
       - "3000"
+
+  terminal-metrica:
+    image: tsl0922/ttyd:latest
+    container_name: terminal-metrica
+    restart: always
+    # Ejecuta una shell de alpine. Puedes cambiar 'katrix:monitor' por tu usuario:clave deseado
+    command: ttyd -p 7681 -i lo -W bash
+    environment:
+      - TZ=UTC
+    expose:
+      - "7681"
 
   frontend-metrica:
     build:
@@ -25,5 +35,10 @@ services:
     restart: always
     ports:
       - "4205:4200"
+    environment:
+      # Credenciales por defecto (CÁMBIALAS)
+      - AUTH_USER=admin
+      - AUTH_PASS=katrix2026
     depends_on:
       - backend-metrica
+      - terminal-metrica

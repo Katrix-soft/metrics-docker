@@ -22,6 +22,7 @@ export class AppComponent implements OnInit, OnDestroy, AfterViewInit {
     statusMessage = '';
     searchTerm = '';
     logInterval: any;
+    showTerminal = false;
 
     @ViewChild('cpuChart') cpuChartRef!: ElementRef;
     @ViewChild('memChart') memChartRef!: ElementRef;
@@ -61,6 +62,10 @@ export class AppComponent implements OnInit, OnDestroy, AfterViewInit {
 
     togglePause() {
         this.paused = !this.paused;
+    }
+
+    toggleTerminal() {
+        this.showTerminal = !this.showTerminal;
     }
 
     getLogs(container: any) {
