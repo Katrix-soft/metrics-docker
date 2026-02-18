@@ -281,17 +281,12 @@ export class AppComponent implements OnInit, OnDestroy, AfterViewInit {
     }
 
     testWhatsApp() {
-        if (!this.waPhone) {
-            this.statusMessage = 'Please enter Phone Number';
-            return;
-        }
         this.statusMessage = 'Sending WhatsApp...';
         this.http.post('/api/notify/whatsapp', {
-            phone: this.waPhone,
-            message: '🚀 Katrix Monitor: CallMeBot active with key 4034379!'
+            message: '🚀 Katrix Monitor: Test successful to 5492616557673!'
         }).subscribe({
             next: (ok) => {
-                this.statusMessage = ok ? 'WhatsApp Sent!' : 'Failed (Check number format)';
+                this.statusMessage = ok ? 'WhatsApp Sent!' : 'Failed (Check CallMeBot status)';
                 this.clearStatus();
             },
             error: () => this.statusMessage = 'Network error'

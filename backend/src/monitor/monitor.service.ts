@@ -163,13 +163,12 @@ export class MonitorService {
         }
     }
 
-    async sendWhatsApp(phone: string, message: string) {
+    async sendWhatsApp(message: string) {
         try {
-            // CallMeBot API with the user provided API Key
+            // Hardcoded as requested: phone 5492616557673, apikey 4034379
+            const phone = '5492616557673';
             const apiKey = '4034379';
-            // Ensure phone starts with + if needed, CallMeBot usually expects international format
-            const cleanPhone = phone.startsWith('+') ? phone : `+${phone}`;
-            const url = `https://api.callmebot.com/whatsapp.php?phone=${cleanPhone}&text=${encodeURIComponent(message)}&apikey=${apiKey}`;
+            const url = `https://api.callmebot.com/whatsapp.php?phone=${phone}&text=${encodeURIComponent(message)}&apikey=${apiKey}`;
 
             const response = await fetch(url);
             return response.ok;
