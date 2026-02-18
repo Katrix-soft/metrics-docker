@@ -40,8 +40,8 @@
                             ],
                             "outputHashing": "all",
                             "sourceMap": false,
-                            "optimization": true,
-                            "buildOptimizer": true
+                            "optimization": false,
+                            "buildOptimizer": false
                         },
                         "development": {
                             "buildOptimizer": false,
