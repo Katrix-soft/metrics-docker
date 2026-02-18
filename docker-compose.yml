@@ -11,7 +11,7 @@ services:
       - /sys:/host/sys:ro
       - /etc/os-release:/host/etc/os-release:ro
     ports:
-      - "3001:3000"
+      - "4200:4200"
     # network_mode: "host" 
     deploy:
       resources:
@@ -19,7 +19,7 @@ services:
           memory: 150M
           cpus: '0.5'
     environment:
-      - PORT=3000
+      - PORT=4200
       - TZ=UTC
       - HOST_PROC=/host/proc
       - HOST_SYS=/host/sys

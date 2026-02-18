@@ -33,8 +33,8 @@ RUN npm install --omit=dev
 # Angular 17 usually builds to dist/<project-name>/browser
 COPY --from=frontend-builder /app/frontend/dist/katrix-monitor/browser/ ./public/
 
-# Expose port 3000
-EXPOSE 3000
+# Expose port 4200
+EXPOSE 4200
 
 # Metadata
 LABEL maintainer="Antigravity"
