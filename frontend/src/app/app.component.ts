@@ -340,4 +340,8 @@ export class AppComponent implements OnInit, OnDestroy, AfterViewInit {
             c.id.toLowerCase().includes(this.searchTerm.toLowerCase())
         );
     }
+
+    openLink(url: string) {
+        window.open(url, '_blank');
+    }
 }

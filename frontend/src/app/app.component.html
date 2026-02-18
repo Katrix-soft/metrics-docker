@@ -297,9 +297,8 @@
                         <input type="text" [(ngModel)]="tgChatId" placeholder="987654321" class="search-input"
                             style="width: 100%; border: 1px solid #30363d;">
                         <small style="color: var(--secondary-text); display: block; margin-top: 0.3rem;">
-                            Tip: Send /id to <a href="https://t.me/userinfobot" target="_blank"
-                                style="color: var(--accent-color); text-decoration: none;">@userinfobot</a> to get your
-                            Chat ID.
+                            Tip: Send /id to <span style="color: var(--accent-color); cursor: pointer;"
+                                (click)="openLink('https://t.me/userinfobot')">@userinfobot</span> to get your Chat ID.
                         </small>
                     </div>
                     <button (click)="testTelegram()" class="pause-btn"

@@ -4,8 +4,8 @@ COPY frontend/package*.json ./
 # Instalación ultra-rápida y que consume menos RAM
 RUN npm ci --quiet
 COPY frontend/ .
-# ESTRATEGIA EXTREMA: Un solo hilo de CPU, menos RAM, sin caché
-RUN NG_BUILD_MAX_WORKERS=1 NODE_OPTIONS=--max-old-space-size=768 ./node_modules/.bin/ng build --configuration development --no-progress
+# Ahora que hemos corregido los errores de HTML, el build pasará sin problemas
+RUN NODE_OPTIONS=--max-old-space-size=1024 npm run build
 
 FROM nginx:alpine
 # Instalamos la utilidad para generar contraseñas
