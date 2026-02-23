@@ -15,31 +15,41 @@
                 ACCEDER CON CONTRASEÑA
             </button>
 
-            <!-- Biometric Section: Only if supported -->
-            <div *ngIf="biometrySupported && isBiometricLinked">
+            <!-- Biometric Section: Prominent on mobile -->
+            <div *ngIf="biometrySupported">
                 <div style="margin: 2rem 0 1.5rem; display: flex; align-items: center; gap: 1rem;">
                     <div style="flex: 1; height: 1px; background: rgba(255,255,255,0.1);"></div>
                     <span
-                        style="font-size: 0.7rem; color: var(--secondary-text); font-weight: 700; text-transform: uppercase;">Acceso
-                        biométrico</span>
+                        style="font-size: 0.7rem; color: var(--secondary-text); font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em;">ACCESO
+                        RÁPIDO</span>
                     <div style="flex: 1; height: 1px; background: rgba(255,255,255,0.1);"></div>
                 </div>
 
                 <button type="button" (click)="loginWithBiometrics()" class="login-btn biometric-btn"
-                    style="height: 60px; display: flex; align-items: center; justify-content: center; gap: 1rem; border-radius: 12px;">
-                    <svg width="28" height="28" fill="currentColor" viewBox="0 0 16 16">
+                    style="height: 65px; display: flex; align-items: center; justify-content: center; gap: 1rem; border-radius: 16px; margin-top: 0;">
+                    <svg width="32" height="32" fill="currentColor" viewBox="0 0 16 16">
                         <path
                             d="M4.828 4.41a.5.5 0 0 0-.723-.689 6 6 0 1 0 7.79 0 .5.5 0 1 0-.723.689 5 5 0 1 1-6.344 0z" />
                         <path
                             d="M11 6a.5.5 0 0 1 .458.691l-1 2.5a.5.5 0 1 1-.928-.382L10.231 7H8.5a.5.5 0 0 1 0-1h2.5zM5 6a.5.5 0 1 1-1 0 .5.5 0 0 1 1 0z" />
                         <path d="M8 8a1 1 0 1 1 0-2 1 1 0 0 1 0 2z" />
                     </svg>
-                    <span style="font-size: 1.1rem;">USAR HUELLA / CARA</span>
+                    <span style="font-size: 1.1rem; font-weight: 900;">ENTRAR CON HUELLA</span>
                 </button>
+
+                <div *ngIf="!isBiometricLinked"
+                    style="margin-top: 1rem; font-size: 0.7rem; color: #d29922; background: rgba(210, 153, 34, 0.1); padding: 0.5rem; border-radius: 6px;">
+                    ⚠️ Debes vincular tu huella desde el panel al menos una vez.
+                </div>
             </div>
 
-            <div class="login-error" *ngIf="loginError">
+            <div class="login-error" *ngIf="loginError" style="margin-top: 1.5rem;">
                 {{ loginError }}
+            </div>
+
+            <div *ngIf="statusMessage"
+                style="margin-top: 1rem; color: var(--accent-color); font-size: 0.85rem; font-weight: 600;">
+                {{ statusMessage }}
             </div>
         </form>
 

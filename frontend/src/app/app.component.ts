@@ -72,15 +72,11 @@ export class AppComponent implements OnInit, OnDestroy, AfterViewInit {
 
     async checkBiometricsAvailability() {
         if (window.PublicKeyCredential) {
-            try {
-                this.biometrySupported = await window.PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable();
-            } catch (e) {
-                this.biometrySupported = false;
-            }
-        }
-        // If we previously linked, assume it's supported even if the check is weirdly false on some mobile browsers
-        if (this.isBiometricLinked) {
+            // Chrome/Safari on mobile often return false if not on HTTPS or if user hasn't interacted.
+            // We just check if the API exists.
             this.biometrySupported = true;
+        } else {
+            this.biometrySupported = false;
         }
     }
 
@@ -111,43 +107,57 @@ export class AppComponent implements OnInit, OnDestroy, AfterViewInit {
 
     async loginWithBiometrics() {
         if (!window.PublicKeyCredential) {
-            this.loginError = 'Biometría no disponible.';
+            this.loginError = 'Biometría no disponible en este navegador.';
+            return;
+        }
+
+        if (window.location.protocol !== 'https:' && window.location.hostname !== 'localhost') {
+            this.loginError = '❌ REQUERIDO: HTTPS para usar Huella/Cara.';
             return;
         }
 
         try {
-            this.statusMessage = 'Verificando identidad...';
+            this.statusMessage = 'Diga "Patata" al sensor...';
             const challenge = new Uint8Array(32);
             window.crypto.getRandomValues(challenge);
+
+            // WebAuthn RP ID must be the domain without port/protocol
+            const rpId = window.location.hostname;
 
             const options: any = {
                 publicKey: {
                     challenge: challenge,
-                    rp: { name: "Katrix Monitor", id: window.location.hostname },
+                    rp: { name: "Katrix Monitor Lite", id: rpId },
                     user: {
-                        id: Uint8Array.from("user" + Date.now(), c => c.charCodeAt(0)),
+                        id: Uint8Array.from("katrix-user-" + rpId, c => c.charCodeAt(0)),
                         name: "admin",
                         displayName: "Admin"
                     },
                     pubKeyCredParams: [{ alg: -7, type: "public-key" }],
-                    authenticatorSelection: { userVerification: "required" },
+                    authenticatorSelection: {
+                        authenticatorAttachment: "platform",
+                        userVerification: "required"
+                    },
                     timeout: 60000
                 }
             };
 
-            // Use get instead of create for login if we had a real backend, 
-            // but for "Lite" we just want to prove they can pass the sensor.
-            // Some authenticators require 'create' to show the UI clearly.
             await navigator.credentials.create(options);
 
-            // Success!
+            // If we reach here, user passed local sensor
             this.isLoggedIn = true;
             localStorage.setItem('katrix_token', 'katrix-secret-token');
             this.startApp();
-            this.statusMessage = '✅ Acceso concedido';
+            this.statusMessage = '✅ Acceso verificado';
         } catch (e: any) {
-            console.error(e);
-            this.loginError = 'Error biométrico: ' + (e.message || 'Cancelado');
+            console.error('BioError:', e);
+            if (e.name === 'SecurityError') {
+                this.loginError = '❌ Error de Dominio: No puedes usar IPs, solo dominios real con SSL.';
+            } else if (e.name === 'NotAllowedError') {
+                this.loginError = 'Acceso cancelado.';
+            } else {
+                this.loginError = 'Error: ' + (e.message || 'Fallo biometría');
+            }
             this.statusMessage = '';
         }
     }
