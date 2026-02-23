@@ -42,3 +42,10 @@ services:
     depends_on:
       - backend-metrica
       - terminal-metrica
+    networks:
+      - default
+      - npm_network
+
+networks:
+  npm_network:
+    external: true

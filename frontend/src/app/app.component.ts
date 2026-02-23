@@ -106,28 +106,41 @@ export class AppComponent implements OnInit, OnDestroy, AfterViewInit {
 
     async loginWithBiometrics() {
         if (!window.PublicKeyCredential) {
-            this.loginError = 'Biometría no soportada en este navegador.';
+            this.loginError = 'Biometría no soportada en este dispositivo.';
+            return;
+        }
+
+        // BIOMETRY REQUIREMENTS: HTTPS + DOMAIN (No IP)
+        if (window.location.protocol !== 'https:' && window.location.hostname !== 'localhost') {
+            this.loginError = '❌ La biometría REQUIERE HTTPS. Configura SSL en tu dominio.';
+            return;
+        }
+
+        const domain = window.location.hostname;
+        const isIP = /^(?:[0-9]{1,3}\.){3}[0-9]{1,3}$/.test(domain);
+        if (isIP) {
+            this.loginError = '❌ WebAuthn no permite IPs. Usa un dominio (ej: monitor.tudominio.com)';
             return;
         }
 
         try {
-            // To trigger the REAL biometric dialog (Fingerprint/PIN/FaceID)
-            // we use the WebAuthn API with a dummy challenge.
             this.statusMessage = 'Abre el sensor de huella...';
-
             const challenge = new Uint8Array(32);
             window.crypto.getRandomValues(challenge);
 
             const options: any = {
                 publicKey: {
                     challenge: challenge,
-                    rp: { name: "Katrix Monitor" },
-                    user: {
-                        id: Uint8Array.from("katrix-user", c => c.charCodeAt(0)),
-                        name: "admin@katrix.soft",
-                        displayName: "Katrix Administrator"
+                    rp: {
+                        name: "Katrix Monitor Lite",
+                        id: domain
                     },
-                    pubKeyCredParams: [{ alg: -7, type: "public-key" }], // ES256
+                    user: {
+                        id: Uint8Array.from("katrix-user-rev1", c => c.charCodeAt(0)),
+                        name: "admin@katrix.soft",
+                        displayName: "Administrador Katrix"
+                    },
+                    pubKeyCredParams: [{ alg: -7, type: "public-key" }],
                     authenticatorSelection: {
                         authenticatorAttachment: "platform",
                         userVerification: "required"
@@ -136,26 +149,27 @@ export class AppComponent implements OnInit, OnDestroy, AfterViewInit {
                 }
             };
 
-            // This line triggers the OS Biometric Prompt
-            await navigator.credentials.create(options);
+            const credential = await navigator.credentials.create(options);
 
-            // If we reach here, the user passed the biometric check!
-            const token = localStorage.getItem('katrix_token');
-            if (token === 'katrix-secret-token') {
-                this.isLoggedIn = true;
-                this.startApp();
-                this.statusMessage = '✅ Identidad verificada. ¡Bienvenido!';
-            } else {
-                this.loginError = 'Primero entra con contraseña una vez para vincular.';
+            if (credential) {
+                const token = localStorage.getItem('katrix_token');
+                if (token === 'katrix-secret-token') {
+                    this.isLoggedIn = true;
+                    this.startApp();
+                    this.statusMessage = '✅ ¡Acceso Biométrico Correcto!';
+                } else {
+                    this.loginError = 'Vínculo fallido. Entra con clave una vez primero.';
+                }
             }
         } catch (e: any) {
             console.error('Biometric error:', e);
+            this.statusMessage = '';
             if (e.name === 'NotAllowedError') {
                 this.loginError = 'Acceso cancelado o tiempo agotado.';
             } else if (e.name === 'SecurityError') {
-                this.loginError = 'Error de seguridad: La biometría requiere HTTPS o Localhost.';
+                this.loginError = 'Error de seguridad: Requiere HTTPS.';
             } else {
-                this.loginError = 'Error al verificar identidad (WebAuthn).';
+                this.loginError = 'Error: ' + e.message;
             }
         }
     }
