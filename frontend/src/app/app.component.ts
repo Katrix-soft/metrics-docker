@@ -59,7 +59,32 @@ export class AppComponent implements OnInit, OnDestroy, AfterViewInit {
         if (token === 'katrix-secret-token') {
             this.isLoggedIn = true;
             this.startApp();
+        } else {
+            // Auto-trigger biometrics after 1 second if available
+            setTimeout(() => {
+                this.checkBiometricsAvailability();
+            }, 1000);
         }
+    }
+
+    async checkBiometricsAvailability() {
+        if (window.PublicKeyCredential) {
+            const available = await window.PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable();
+            if (available) {
+                // We don't auto-trigger create() because it needs user gesture usually,
+                // but we can at least show a message or prompt.
+                console.log('Biometría disponible');
+            }
+        }
+    }
+
+    logout() {
+        localStorage.removeItem('katrix_token');
+        this.isLoggedIn = false;
+        if (this.interval) clearInterval(this.interval);
+        // Reset state
+        this.system = null;
+        this.docker = [];
     }
 
     login() {
@@ -125,7 +150,9 @@ export class AppComponent implements OnInit, OnDestroy, AfterViewInit {
         } catch (e: any) {
             console.error('Biometric error:', e);
             if (e.name === 'NotAllowedError') {
-                this.loginError = 'Acceso cancelado por el usuario.';
+                this.loginError = 'Acceso cancelado o tiempo agotado.';
+            } else if (e.name === 'SecurityError') {
+                this.loginError = 'Error de seguridad: La biometría requiere HTTPS o Localhost.';
             } else {
                 this.loginError = 'Error al verificar identidad (WebAuthn).';
             }
