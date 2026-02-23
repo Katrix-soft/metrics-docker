@@ -74,11 +74,15 @@ export class MonitorController {
 
     @Post('webhook/whatsapp')
     async handleWhatsAppWebhook(@Body() body: any) {
-        // CallMeBot sends: { text: "message", phone: "sender_phone" }
-        // We filter by your number to avoid unauthorized control
+        // CallMeBot can send data in various fields depending on configuration
+        const message = body.text || body.message || body.msg || '';
+        const incomingPhone = body.phone || body.sender || '';
+
         const authorizedPhone = '5492616557673';
-        if (body.phone && body.phone.includes(authorizedPhone)) {
-            const responseMessage = await this.monitorService.processCommand(body.text);
+
+        // Check if the message is from the authorized number
+        if (incomingPhone.includes(authorizedPhone) || authorizedPhone.includes(incomingPhone)) {
+            const responseMessage = await this.monitorService.processCommand(message);
             await this.monitorService.sendWhatsApp(responseMessage);
         }
         return { ok: true };

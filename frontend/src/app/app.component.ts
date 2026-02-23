@@ -51,6 +51,7 @@ export class AppComponent implements OnInit, OnDestroy, AfterViewInit {
     cpuData: number[] = [];
     memData: number[] = [];
     labels: string[] = [];
+    window = window;
 
     constructor(private http: HttpClient) { }
 
