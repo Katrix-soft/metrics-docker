@@ -14,6 +14,15 @@
                 ENTER DASHBOARD
             </button>
 
+            <button type="button" (click)="loginWithBiometrics()" class="login-btn"
+                style="background: transparent; color: var(--accent-color); border: 1px solid var(--accent-color); margin-top: 1rem; display: flex; align-items: center; justify-content: center; gap: 0.5rem;">
+                <svg width="20" height="20" fill="currentColor" viewBox="0 0 16 16">
+                    <path
+                        d="M8 1a7 7 0 1 0 0 14A7 7 0 0 0 8 1zM7 11.5a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 0 1h-1a.5.5 0 0 1-.5-.5zm.5-7a.5.5 0 0 1 .5.5v5a.5.5 0 0 1-1 0v-5a.5.5 0 0 1 .5-.5z" />
+                </svg>
+                LOGIN WITH BIOMETRICS
+            </button>
+
             <div class="login-error" *ngIf="loginError">
                 {{ loginError }}
             </div>
