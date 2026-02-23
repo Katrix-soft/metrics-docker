@@ -165,6 +165,11 @@ export class AppComponent implements OnInit, OnDestroy, AfterViewInit {
             elements: { line: { tension: 0.4 } }
         };
 
+        if (!this.cpuChartRef?.nativeElement || !this.memChartRef?.nativeElement) {
+            console.warn('Chart elements not yet available');
+            return;
+        }
+
         this.cpuChart = new Chart(this.cpuChartRef.nativeElement, {
             type: 'line',
             data: {

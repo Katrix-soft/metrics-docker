@@ -1,15 +1,61 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, OnModuleInit } from '@nestjs/common';
 import * as si from 'systeminformation';
 import * as Docker from 'dockerode';
 
 @Injectable()
-export class MonitorService {
+export class MonitorService implements OnModuleInit {
     private docker: Docker;
+    private lastContainerCount = 0;
+    private cpuAlertSent = false;
+    private ramAlertSent = false;
 
     constructor() {
         const isWindows = process.platform === 'win32';
         const socketPath = isWindows ? '//./pipe/docker_engine' : '/var/run/docker.sock';
         this.docker = new Docker({ socketPath });
+    }
+
+    onModuleInit() {
+        // Start automatic monitoring loop every 60 seconds
+        setInterval(() => this.checkAutomations(), 60000);
+    }
+
+    async checkAutomations() {
+        try {
+            // Check for new containers (stacks)
+            const containers = await this.docker.listContainers({ all: true });
+            if (this.lastContainerCount > 0 && containers.length > this.lastContainerCount) {
+                const newCount = containers.length - this.lastContainerCount;
+                await this.sendWhatsApp(`🚀 ¡Alerta! Se han detectado ${newCount} nuevos contenedores/stacks. Total actual: ${containers.length}`);
+            }
+            this.lastContainerCount = containers.length;
+
+            // Check system resources
+            const stats = await this.getSystemStats();
+            const cpuUsage = parseFloat(stats.cpu);
+            const ramUsage = parseFloat(stats.memory.percent);
+
+            // CPU Alert (Threshold 90%)
+            if (cpuUsage > 90 && !this.cpuAlertSent) {
+                await this.sendWhatsApp(`⚠️ ¡CRÍTICO! El uso de CPU ha superado el 90% (${cpuUsage}%).`);
+                this.cpuAlertSent = true;
+            } else if (cpuUsage < 80 && this.cpuAlertSent) {
+                await this.sendWhatsApp(`✅ Info: El uso de CPU se ha normalizado (${cpuUsage}%).`);
+                this.cpuAlertSent = false;
+            }
+
+            // RAM Alert (Threshold 90%)
+            if (ramUsage > 90 && !this.ramAlertSent) {
+                await this.sendWhatsApp(`🔥 ¡CRÍTICO! El uso de RAM ha superado el 90% (${ramUsage}%).`);
+                this.ramAlertSent = true;
+            } else if (ramUsage < 80 && this.ramAlertSent) {
+                await this.sendWhatsApp(`✅ Info: El uso de RAM se ha normalizado (${ramUsage}%).`);
+                this.ramAlertSent = false;
+            }
+
+        } catch (error) {
+            console.error('Automation Loop Error:', error);
+        }
     }
 
     async getSystemStats() {
