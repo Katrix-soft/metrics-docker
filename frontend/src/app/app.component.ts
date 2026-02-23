@@ -72,7 +72,15 @@ export class AppComponent implements OnInit, OnDestroy, AfterViewInit {
 
     async checkBiometricsAvailability() {
         if (window.PublicKeyCredential) {
-            this.biometrySupported = await window.PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable();
+            try {
+                this.biometrySupported = await window.PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable();
+            } catch (e) {
+                this.biometrySupported = false;
+            }
+        }
+        // If we previously linked, assume it's supported even if the check is weirdly false on some mobile browsers
+        if (this.isBiometricLinked) {
+            this.biometrySupported = true;
         }
     }
 

@@ -10,27 +10,31 @@
                     placeholder="••••••••" autocomplete="current-password" required>
             </div>
 
-            <button type="submit" class="login-btn">
-                ENTER WITH PASSWORD
+            <button type="submit" class="login-btn"
+                style="background: var(--accent-color); color: #000; box-shadow: 0 4px 15px rgba(88, 166, 255, 0.4);">
+                ACCEDER CON CONTRASEÑA
             </button>
 
+            <!-- Biometric Section: Only if supported -->
             <div *ngIf="biometrySupported && isBiometricLinked">
-                <div style="margin: 1.5rem 0; display: flex; align-items: center; gap: 1rem;">
-                    <div style="flex: 1; height: 1px; background: var(--border-color);"></div>
-                    <span style="font-size: 0.75rem; color: var(--secondary-text);">OR USE BIOMETRICS</span>
-                    <div style="flex: 1; height: 1px; background: var(--border-color);"></div>
+                <div style="margin: 2rem 0 1.5rem; display: flex; align-items: center; gap: 1rem;">
+                    <div style="flex: 1; height: 1px; background: rgba(255,255,255,0.1);"></div>
+                    <span
+                        style="font-size: 0.7rem; color: var(--secondary-text); font-weight: 700; text-transform: uppercase;">Acceso
+                        biométrico</span>
+                    <div style="flex: 1; height: 1px; background: rgba(255,255,255,0.1);"></div>
                 </div>
 
-                <button type="button" (click)="loginWithBiometrics()" class="login-btn"
-                    style="background: #25d366; color: black; border: none; display: flex; align-items: center; justify-content: center; gap: 0.8rem; height: 55px;">
-                    <svg width="24" height="24" fill="currentColor" viewBox="0 0 16 16">
+                <button type="button" (click)="loginWithBiometrics()" class="login-btn biometric-btn"
+                    style="height: 60px; display: flex; align-items: center; justify-content: center; gap: 1rem; border-radius: 12px;">
+                    <svg width="28" height="28" fill="currentColor" viewBox="0 0 16 16">
                         <path
                             d="M4.828 4.41a.5.5 0 0 0-.723-.689 6 6 0 1 0 7.79 0 .5.5 0 1 0-.723.689 5 5 0 1 1-6.344 0z" />
                         <path
                             d="M11 6a.5.5 0 0 1 .458.691l-1 2.5a.5.5 0 1 1-.928-.382L10.231 7H8.5a.5.5 0 0 1 0-1h2.5zM5 6a.5.5 0 1 1-1 0 .5.5 0 0 1 1 0z" />
                         <path d="M8 8a1 1 0 1 1 0-2 1 1 0 0 1 0 2z" />
                     </svg>
-                    <span style="font-weight: 800;">USE FINGERPRINT / FACE ID</span>
+                    <span style="font-size: 1.1rem;">USAR HUELLA / CARA</span>
                 </button>
             </div>
 
