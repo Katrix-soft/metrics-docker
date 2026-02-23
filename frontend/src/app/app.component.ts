@@ -16,6 +16,8 @@ export class AppComponent implements OnInit, OnDestroy, AfterViewInit {
     interval: any;
     paused = false;
     isLoggedIn = false;
+    isBiometricLinked = false;
+    biometrySupported = false;
     loginPassword = '';
     loginError = '';
 
@@ -57,25 +59,20 @@ export class AppComponent implements OnInit, OnDestroy, AfterViewInit {
 
     ngOnInit() {
         const token = localStorage.getItem('katrix_token');
+        this.isBiometricLinked = localStorage.getItem('katrix_bio_linked') === 'true';
+
         if (token === 'katrix-secret-token') {
             this.isLoggedIn = true;
             this.startApp();
         } else {
-            // Auto-trigger biometrics after 1 second if available
-            setTimeout(() => {
-                this.checkBiometricsAvailability();
-            }, 1000);
+            // Auto-check if we can suggest biometrics
+            this.checkBiometricsAvailability();
         }
     }
 
     async checkBiometricsAvailability() {
         if (window.PublicKeyCredential) {
-            const available = await window.PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable();
-            if (available) {
-                // We don't auto-trigger create() because it needs user gesture usually,
-                // but we can at least show a message or prompt.
-                console.log('Biometría disponible');
-            }
+            this.biometrySupported = await window.PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable();
         }
     }
 
@@ -106,71 +103,79 @@ export class AppComponent implements OnInit, OnDestroy, AfterViewInit {
 
     async loginWithBiometrics() {
         if (!window.PublicKeyCredential) {
-            this.loginError = 'Biometría no soportada en este dispositivo.';
-            return;
-        }
-
-        // BIOMETRY REQUIREMENTS: HTTPS + DOMAIN (No IP)
-        if (window.location.protocol !== 'https:' && window.location.hostname !== 'localhost') {
-            this.loginError = '❌ La biometría REQUIERE HTTPS. Configura SSL en tu dominio.';
-            return;
-        }
-
-        const domain = window.location.hostname;
-        const isIP = /^(?:[0-9]{1,3}\.){3}[0-9]{1,3}$/.test(domain);
-        if (isIP) {
-            this.loginError = '❌ WebAuthn no permite IPs. Usa un dominio (ej: monitor.tudominio.com)';
+            this.loginError = 'Biometría no disponible.';
             return;
         }
 
         try {
-            this.statusMessage = 'Abre el sensor de huella...';
+            this.statusMessage = 'Verificando identidad...';
             const challenge = new Uint8Array(32);
             window.crypto.getRandomValues(challenge);
 
             const options: any = {
                 publicKey: {
                     challenge: challenge,
-                    rp: {
-                        name: "Katrix Monitor Lite",
-                        id: domain
-                    },
+                    rp: { name: "Katrix Monitor", id: window.location.hostname },
                     user: {
-                        id: Uint8Array.from("katrix-user-rev1", c => c.charCodeAt(0)),
-                        name: "admin@katrix.soft",
-                        displayName: "Administrador Katrix"
+                        id: Uint8Array.from("user" + Date.now(), c => c.charCodeAt(0)),
+                        name: "admin",
+                        displayName: "Admin"
                     },
                     pubKeyCredParams: [{ alg: -7, type: "public-key" }],
-                    authenticatorSelection: {
-                        authenticatorAttachment: "platform",
-                        userVerification: "required"
-                    },
+                    authenticatorSelection: { userVerification: "required" },
                     timeout: 60000
                 }
             };
 
-            const credential = await navigator.credentials.create(options);
+            // Use get instead of create for login if we had a real backend, 
+            // but for "Lite" we just want to prove they can pass the sensor.
+            // Some authenticators require 'create' to show the UI clearly.
+            await navigator.credentials.create(options);
 
-            if (credential) {
-                const token = localStorage.getItem('katrix_token');
-                if (token === 'katrix-secret-token') {
-                    this.isLoggedIn = true;
-                    this.startApp();
-                    this.statusMessage = '✅ ¡Acceso Biométrico Correcto!';
-                } else {
-                    this.loginError = 'Vínculo fallido. Entra con clave una vez primero.';
-                }
-            }
+            // Success!
+            this.isLoggedIn = true;
+            localStorage.setItem('katrix_token', 'katrix-secret-token');
+            this.startApp();
+            this.statusMessage = '✅ Acceso concedido';
         } catch (e: any) {
-            console.error('Biometric error:', e);
+            console.error(e);
+            this.loginError = 'Error biométrico: ' + (e.message || 'Cancelado');
             this.statusMessage = '';
-            if (e.name === 'NotAllowedError') {
-                this.loginError = 'Acceso cancelado o tiempo agotado.';
-            } else if (e.name === 'SecurityError') {
-                this.loginError = 'Error de seguridad: Requiere HTTPS.';
-            } else {
-                this.loginError = 'Error: ' + e.message;
-            }
+        }
+    }
+
+    async activateBiometrics() {
+        if (!window.PublicKeyCredential) return;
+
+        try {
+            this.statusMessage = 'Escanea tu huella para vincular...';
+            const challenge = new Uint8Array(32);
+            window.crypto.getRandomValues(challenge);
+
+            const options: any = {
+                publicKey: {
+                    challenge: challenge,
+                    rp: { name: "Katrix Monitor", id: window.location.hostname },
+                    user: {
+                        id: Uint8Array.from("katrix-v3", c => c.charCodeAt(0)),
+                        name: "admin@katrix",
+                        displayName: "Admin Katrix"
+                    },
+                    pubKeyCredParams: [{ alg: -7, type: "public-key" }],
+                    authenticatorSelection: { userVerification: "required" },
+                    timeout: 60000
+                }
+            };
+
+            await navigator.credentials.create(options);
+
+            this.isBiometricLinked = true;
+            localStorage.setItem('katrix_bio_linked', 'true');
+            this.statusMessage = '✅ ¡Huella vinculada con éxito!';
+            this.clearStatus();
+        } catch (e: any) {
+            this.statusMessage = '❌ Error al vincular';
+            this.clearStatus();
         }
     }
 

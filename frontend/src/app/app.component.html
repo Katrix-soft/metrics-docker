@@ -14,23 +14,25 @@
                 ENTER WITH PASSWORD
             </button>
 
-            <div style="margin: 1.5rem 0; display: flex; align-items: center; gap: 1rem;">
-                <div style="flex: 1; height: 1px; background: var(--border-color);"></div>
-                <span style="font-size: 0.75rem; color: var(--secondary-text);">OR USE BIOMETRICS</span>
-                <div style="flex: 1; height: 1px; background: var(--border-color);"></div>
-            </div>
+            <div *ngIf="biometrySupported && isBiometricLinked">
+                <div style="margin: 1.5rem 0; display: flex; align-items: center; gap: 1rem;">
+                    <div style="flex: 1; height: 1px; background: var(--border-color);"></div>
+                    <span style="font-size: 0.75rem; color: var(--secondary-text);">OR USE BIOMETRICS</span>
+                    <div style="flex: 1; height: 1px; background: var(--border-color);"></div>
+                </div>
 
-            <button type="button" (click)="loginWithBiometrics()" class="login-btn"
-                style="background: #25d366; color: black; border: none; display: flex; align-items: center; justify-content: center; gap: 0.8rem; height: 55px;">
-                <svg width="24" height="24" fill="currentColor" viewBox="0 0 16 16">
-                    <path
-                        d="M4.828 4.41a.5.5 0 0 0-.723-.689 6 6 0 1 0 7.79 0 .5.5 0 1 0-.723.689 5 5 0 1 1-6.344 0z" />
-                    <path
-                        d="M11 6a.5.5 0 0 1 .458.691l-1 2.5a.5.5 0 1 1-.928-.382L10.231 7H8.5a.5.5 0 0 1 0-1h2.5zM5 6a.5.5 0 1 1-1 0 .5.5 0 0 1 1 0z" />
-                    <path d="M8 8a1 1 0 1 1 0-2 1 1 0 0 1 0 2z" />
-                </svg>
-                <span style="font-weight: 800;">USE FINGERPRINT / FACE ID</span>
-            </button>
+                <button type="button" (click)="loginWithBiometrics()" class="login-btn"
+                    style="background: #25d366; color: black; border: none; display: flex; align-items: center; justify-content: center; gap: 0.8rem; height: 55px;">
+                    <svg width="24" height="24" fill="currentColor" viewBox="0 0 16 16">
+                        <path
+                            d="M4.828 4.41a.5.5 0 0 0-.723-.689 6 6 0 1 0 7.79 0 .5.5 0 1 0-.723.689 5 5 0 1 1-6.344 0z" />
+                        <path
+                            d="M11 6a.5.5 0 0 1 .458.691l-1 2.5a.5.5 0 1 1-.928-.382L10.231 7H8.5a.5.5 0 0 1 0-1h2.5zM5 6a.5.5 0 1 1-1 0 .5.5 0 0 1 1 0z" />
+                        <path d="M8 8a1 1 0 1 1 0-2 1 1 0 0 1 0 2z" />
+                    </svg>
+                    <span style="font-weight: 800;">USE FINGERPRINT / FACE ID</span>
+                </button>
+            </div>
 
             <div class="login-error" *ngIf="loginError">
                 {{ loginError }}
@@ -44,6 +46,28 @@
 </div>
 
 <div class="container" *ngIf="isLoggedIn">
+    <!-- Biometric Link Suggestion -->
+    <div class="bio-link-banner" *ngIf="biometrySupported && !isBiometricLinked">
+        <div style="display: flex; align-items: center; gap: 1rem;">
+            <div
+                style="background: var(--accent-color); color: #0d1117; padding: 0.5rem; border-radius: 50%; display: flex;">
+                <svg width="20" height="20" fill="currentColor" viewBox="0 0 16 16">
+                    <path
+                        d="M8 1a7 7 0 1 0 0 14A7 7 0 0 0 8 1zM7 11.5a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 0 1h-1a.5.5 0 0 1-.5-.5zm.5-7a.5.5 0 0 1 .5.5v5a.5.5 0 0 1-1 0v-5a.5.5 0 0 1 .5-.5z" />
+                </svg>
+            </div>
+            <div>
+                <strong style="display: block; color: var(--accent-color);">¿Activar Acceso Biométrico?</strong>
+                <span style="font-size: 0.85rem; color: var(--secondary-text);">Entra más rápido la próxima vez con tu
+                    huella dactilar o Face ID.</span>
+            </div>
+        </div>
+        <button class="pause-btn" (click)="activateBiometrics()"
+            style="background: var(--accent-color); color: #0d1117; border: none; padding: 0.6rem 1.2rem;">
+            VINCULAR AHORA
+        </button>
+    </div>
+
     <header class="header">
         <div class="brand">
             KATRIX MONITOR <span style="font-weight: 300; opacity: 0.6; font-size: 0.8em;">LITE</span>
@@ -75,20 +99,19 @@
                 </small>
             </div>
             <button class="pause-btn" (click)="optimizeSystem()"
-                style="margin-left: 0.5rem; background: #238636; border: 1px solid #1f672a; box-shadow: 0 0 10px rgba(35, 134, 54, 0.4);">
+                style="background: #238636; border: 1px solid #1f672a; box-shadow: 0 0 10px rgba(35, 134, 54, 0.4);">
                 🚀 MAGIC OPTIMIZE
             </button>
-            <button class="pause-btn" (click)="togglePause()" [class.paused]="paused" style="margin-left: 0.5rem;">
+            <button class="pause-btn" (click)="togglePause()" [class.paused]="paused">
                 {{ paused ? 'RESUME' : 'PAUSE' }}
             </button>
-            <button class="pause-btn" (click)="toggleTerminal()" style="margin-left: 0.5rem; background: #6f42c1;">
+            <button class="pause-btn" (click)="toggleTerminal()" style="background: #6f42c1;">
                 {{ showTerminal ? 'CLOSE TERMINAL' : 'OPEN TERMINAL' }}
             </button>
-            <button class="pause-btn" (click)="showSettings = true" style="margin-left: 0.5rem; background: #24292f;">
+            <button class="pause-btn" (click)="showSettings = true" style="background: #24292f;">
                 ALERT SETTINGS
             </button>
-            <button class="pause-btn" (click)="logout()"
-                style="margin-left: 0.5rem; background: #da3633; color: white;">
+            <button class="pause-btn" (click)="logout()" style="background: #da3633; color: white;">
                 LOGOUT
             </button>
         </div>
