@@ -85,32 +85,50 @@ export class AppComponent implements OnInit, OnDestroy, AfterViewInit {
         }
 
         try {
-            // Check if user has already set up biometrics or just prompt for device auth
-            // Since we don't store keys, we'll "simulate" a proof-of-possession
-            // In a real app, this would involve a challenge from the server
-            this.statusMessage = 'Escaneando huella...';
+            // To trigger the REAL biometric dialog (Fingerprint/PIN/FaceID)
+            // we use the WebAuthn API with a dummy challenge.
+            this.statusMessage = 'Abre el sensor de huella...';
 
-            // Note: This is a simplified proof-of-concept for the "Lite" version
-            // which activates the native biometric dialog
-            const available = await window.PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable();
+            const challenge = new Uint8Array(32);
+            window.crypto.getRandomValues(challenge);
 
-            if (available) {
-                // If the user hasn't registered a key yet, we ask them to log in with password once
-                // For this demo, we'll let them in if they pass the device biometrics
-                // but only if they have already logged in once (token exists)
-                const token = localStorage.getItem('katrix_token');
-                if (token === 'katrix-secret-token') {
-                    this.isLoggedIn = true;
-                    this.startApp();
-                    this.statusMessage = '¡Bienvenido de nuevo!';
-                } else {
-                    this.loginError = 'Primero ingresa con contraseña una vez para vincular tu huella.';
+            const options: any = {
+                publicKey: {
+                    challenge: challenge,
+                    rp: { name: "Katrix Monitor" },
+                    user: {
+                        id: Uint8Array.from("katrix-user", c => c.charCodeAt(0)),
+                        name: "admin@katrix.soft",
+                        displayName: "Katrix Administrator"
+                    },
+                    pubKeyCredParams: [{ alg: -7, type: "public-key" }], // ES256
+                    authenticatorSelection: {
+                        authenticatorAttachment: "platform",
+                        userVerification: "required"
+                    },
+                    timeout: 60000
                 }
+            };
+
+            // This line triggers the OS Biometric Prompt
+            await navigator.credentials.create(options);
+
+            // If we reach here, the user passed the biometric check!
+            const token = localStorage.getItem('katrix_token');
+            if (token === 'katrix-secret-token') {
+                this.isLoggedIn = true;
+                this.startApp();
+                this.statusMessage = '✅ Identidad verificada. ¡Bienvenido!';
             } else {
-                this.loginError = 'No hay autenticador biométrico disponible.';
+                this.loginError = 'Primero entra con contraseña una vez para vincular.';
             }
-        } catch (e) {
-            this.loginError = 'Error al verificar identidad biometríca.';
+        } catch (e: any) {
+            console.error('Biometric error:', e);
+            if (e.name === 'NotAllowedError') {
+                this.loginError = 'Acceso cancelado por el usuario.';
+            } else {
+                this.loginError = 'Error al verificar identidad (WebAuthn).';
+            }
         }
     }
 
