@@ -71,4 +71,16 @@ export class MonitorController {
     async optimizeSystem() {
         return this.monitorService.optimizeSystem();
     }
+
+    @Post('webhook/whatsapp')
+    async handleWhatsAppWebhook(@Body() body: any) {
+        // CallMeBot sends: { text: "message", phone: "sender_phone" }
+        // We filter by your number to avoid unauthorized control
+        const authorizedPhone = '5492616557673';
+        if (body.phone && body.phone.includes(authorizedPhone)) {
+            const responseMessage = await this.monitorService.processCommand(body.text);
+            await this.monitorService.sendWhatsApp(responseMessage);
+        }
+        return { ok: true };
+    }
 }

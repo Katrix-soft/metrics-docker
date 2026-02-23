@@ -294,6 +294,62 @@ export class MonitorService implements OnModuleInit {
         }
     }
 
+    async processCommand(input: string): Promise<string> {
+        const cmd = input.trim().toLowerCase();
+
+        if (cmd === 'hola' || cmd === 'menu' || cmd === '0') {
+            return `👋 ¡Hola! Soy *Katrix Monitor Lite*
+¿En qué puedo ayudarte hoy?
+
+1️⃣ *Estado del Sistema* (RAM/CPU)
+2️⃣ *Stacks Activos* (Docker)
+3️⃣ *Magic Optimize* (Limpieza)
+4️⃣ *Capacidad* (Stacks libres)
+
+Escribí el número de la opción o *Hola* para volver a ver este menú.`;
+        }
+
+        if (cmd === '1') {
+            const stats = await this.getSystemStats();
+            return `📊 *Estado del Sistema*
+🖥️ CPU: ${stats.cpu}%
+🧠 RAM: ${stats.memory.used} / ${stats.memory.total} (${stats.memory.percent}%)
+💾 Disco: ${stats.disk[0]?.use}% (${stats.disk[0]?.used} / ${stats.disk[0]?.size})
+⏱️ Uptime: ${stats.uptime}`;
+        }
+
+        if (cmd === '2') {
+            const docker = await this.getDockerStats() as any[];
+            if (!Array.isArray(docker)) return "❌ No se pudo conectar con el Socket de Docker.";
+
+            let list = `🐳 *Contenedores Activos (${docker.filter(c => c.status === 'running').length}):*\n`;
+            docker.slice(0, 10).forEach(c => {
+                const icon = c.status === 'running' ? '🟢' : '🔴';
+                list += `${icon} ${c.name} (${c.cpu})\n`;
+            });
+            if (docker.length > 10) list += `...y ${docker.length - 10} más.`;
+            return list;
+        }
+
+        if (cmd === '3') {
+            const res = await this.optimizeSystem();
+            return res.success ? `✨ *${res.message}*` : `❌ Error al optimizar: ${res.message}`;
+        }
+
+        if (cmd === '4') {
+            const stats = await this.getSystemStats();
+            const availableMB = parseFloat(stats.memory.available) * 1024;
+            const safeMB = Math.max(0, availableMB - 150);
+            const potentialStacks = Math.floor(safeMB / 256);
+
+            return `🚀 *Análisis de Capacidad*
+Podés subir aproximadamente *${potentialStacks} stacks más* (basado en proyectos de ~256MB).
+Memoria segura disponible: ${Math.round(safeMB)} MB.`;
+        }
+
+        return "🤔 No entiendo ese comando. Escribí *Hola* para ver el menú.";
+    }
+
     private formatUptime(seconds: number): string {
         const days = Math.floor(seconds / (3600 * 24));
         const hours = Math.floor((seconds % (3600 * 24)) / 3600);
