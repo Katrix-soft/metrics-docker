@@ -8,6 +8,7 @@ export class MonitorService implements OnModuleInit {
     private lastContainerCount = 0;
     private cpuAlertSent = false;
     private ramAlertSent = false;
+    private diskAlertSent = false;
 
     constructor() {
         const isWindows = process.platform === 'win32';
@@ -51,6 +52,16 @@ export class MonitorService implements OnModuleInit {
             } else if (ramUsage < 80 && this.ramAlertSent) {
                 await this.sendWhatsApp(`✅ Info: El uso de RAM se ha normalizado (${ramUsage}%).`);
                 this.ramAlertSent = false;
+            }
+
+            // Disk Alert (Threshold 80%)
+            const diskUsage = parseFloat(stats.disk[0]?.use || '0');
+            if (diskUsage > 80 && !this.diskAlertSent) {
+                await this.sendWhatsApp(`💾 ¡Alerta de DISCO! El espacio usado ha superado el 80% (${diskUsage}%). Se recomienda ejecutar MAGIC OPTIMIZE.`);
+                this.diskAlertSent = true;
+            } else if (diskUsage < 75 && this.diskAlertSent) {
+                await this.sendWhatsApp(`✅ Info: El espacio en DISCO se ha liberado (${diskUsage}%).`);
+                this.diskAlertSent = false;
             }
 
         } catch (error) {
@@ -105,15 +116,24 @@ export class MonitorService implements OnModuleInit {
 
     async optimizeSystem() {
         try {
-            // This runs a 'Docker Prune' to free up RAM/Disk from unused resources
-            // It's the safest way to "clean" a Docker environment automatically
-            await this.docker.pruneContainers();
-            await this.docker.pruneImages({ dall: true });
-            await this.docker.pruneNetworks();
-            return { success: true, message: 'Docker environment pruned and optimized' };
-        } catch (error) {
+            // MAGIC OPTIMIZE: Deep clean of Docker to recover RAM and Disk
+            const results = await Promise.all([
+                this.docker.pruneContainers(),
+                this.docker.pruneImages({ dall: true }),
+                this.docker.pruneNetworks(),
+                this.docker.pruneVolumes(), // Clear unused volumes (Disk!)
+            ]);
+
+            const freedSpace = results[1]?.SpaceReclaimed || 0;
+            const freedMB = (freedSpace / 1024 / 1024).toFixed(2);
+
+            return {
+                success: true,
+                message: `✨ Magic Optimize completa: Se recuperaron aprox. ${freedMB}MB de espacio y se limpiaron recursos inactivos.`
+            };
+        } catch (error: any) {
             console.error('Optimization error:', error);
-            return { success: false, message: error.message };
+            return { success: false, message: 'Optimization error: ' + error.message };
         }
     }
 
