@@ -1,4 +1,31 @@
-<div class="container">
+<div class="login-screen" *ngIf="!isLoggedIn">
+    <div class="login-card">
+        <div class="login-logo">KATRIX MONITOR</div>
+        <div class="login-subtitle">SECURE SYSTEM PANEL</div>
+
+        <form (submit)="login()">
+            <div class="login-form-group">
+                <label class="login-label">ACCESS KEY</label>
+                <input type="password" [(ngModel)]="loginPassword" name="password" class="login-input"
+                    placeholder="••••••••" autocomplete="current-password" required>
+            </div>
+
+            <button type="submit" class="login-btn">
+                ENTER DASHBOARD
+            </button>
+
+            <div class="login-error" *ngIf="loginError">
+                {{ loginError }}
+            </div>
+        </form>
+
+        <div style="margin-top: 2rem; font-size: 0.75rem; color: var(--secondary-text); opacity: 0.5;">
+            &copy; 2024 KATRIX SOFT | ULTRA-LITE MONITORING
+        </div>
+    </div>
+</div>
+
+<div class="container" *ngIf="isLoggedIn">
     <header class="header">
         <div class="brand">
             KATRIX MONITOR <span style="font-weight: 300; opacity: 0.6; font-size: 0.8em;">LITE</span>
@@ -314,8 +341,8 @@
             </div>
         </div>
     </div>
+</div>
 
-    <div class="toast" *ngIf="statusMessage">
-        {{ statusMessage }}
-    </div>
+<div class="toast" *ngIf="statusMessage">
+    {{ statusMessage }}
 </div>

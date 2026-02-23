@@ -43,6 +43,15 @@ export class MonitorController {
         return this.monitorService.updateResources(id, resources.memoryLimit, resources.cpuLimit);
     }
 
+    @Post('login')
+    async login(@Body() body: { password: string }) {
+        // Simple hardcoded password for Lite version
+        if (body.password === 'katrix2024') {
+            return { success: true, token: 'katrix-secret-token' };
+        }
+        return { success: false, message: 'Invalid password' };
+    }
+
     @Post('notify/whatsapp')
     async testWhatsApp(@Body() body: { message: string }) {
         return this.monitorService.sendWhatsApp(body.message);

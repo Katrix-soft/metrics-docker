@@ -15,6 +15,9 @@ export class AppComponent implements OnInit, OnDestroy, AfterViewInit {
     docker: any[] = [];
     interval: any;
     paused = false;
+    isLoggedIn = false;
+    loginPassword = '';
+    loginError = '';
 
     showLogs = false;
     currentLogs = '';
@@ -52,6 +55,30 @@ export class AppComponent implements OnInit, OnDestroy, AfterViewInit {
     constructor(private http: HttpClient) { }
 
     ngOnInit() {
+        const token = localStorage.getItem('katrix_token');
+        if (token === 'katrix-secret-token') {
+            this.isLoggedIn = true;
+            this.startApp();
+        }
+    }
+
+    login() {
+        if (!this.loginPassword) return;
+        this.http.post('/api/login', { password: this.loginPassword }).subscribe({
+            next: (res: any) => {
+                if (res.success) {
+                    this.isLoggedIn = true;
+                    localStorage.setItem('katrix_token', res.token);
+                    this.startApp();
+                } else {
+                    this.loginError = 'Acceso denegado. Contraseña incorrecta.';
+                }
+            },
+            error: () => this.loginError = 'Error de conexión con el servidor.'
+        });
+    }
+
+    startApp() {
         this.fetchData();
         this.interval = setInterval(() => this.fetchData(), 5000);
     }
