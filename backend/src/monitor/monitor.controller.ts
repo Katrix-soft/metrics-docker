@@ -43,6 +43,35 @@ export class MonitorController {
         return this.monitorService.updateResources(id, resources.memoryLimit, resources.cpuLimit);
     }
 
+    @Get('2fa/config')
+    async get2FAConfig() {
+        return this.monitorService.get2FAConfig();
+    }
+
+    @Post('2fa/setup')
+    async setup2FA() {
+        return this.monitorService.setup2FA();
+    }
+
+    @Post('2fa/verify')
+    async verify2FA(@Body() body: { secret: string; code: string }) {
+        return this.monitorService.verifyAndSave2FA(body.secret, body.code);
+    }
+
+    @Post('2fa/login')
+    async login2FA(@Body() body: { code: string }) {
+        const res = await this.monitorService.validate2FALogin(body.code);
+        if (res.success) {
+            return { success: true, token: 'katrix-secret-token' };
+        }
+        return { success: false, message: 'Código 2FA inválido' };
+    }
+
+    @Post('2fa/disable')
+    async disable2FA() {
+        return this.monitorService.disable2FA();
+    }
+
     @Post('login')
     async login(@Body() body: { password: string }) {
         // Simple hardcoded password for Lite version

@@ -11,9 +11,17 @@
                     placeholder="••••••••" autocomplete="current-password" required>
             </div>
 
-            <button type="submit" class="login-btn"
+            <!-- 2FA Input (Only if enabled) -->
+            <div class="login-form-group" *ngIf="is2FAEnabled"
+                style="margin-top: 1rem; animation: slideUp 0.3s ease-out;">
+                <label class="login-label" style="color: var(--accent-color);">GOOGLE AUTH CODE (2FA)</label>
+                <input type="text" [(ngModel)]="login2FACode" name="otp" class="login-input" placeholder="000 000"
+                    maxlength="6" style="letter-spacing: 0.5rem; text-align: center; font-size: 1.2rem;">
+            </div>
+
+            <button type="submit" (click)="is2FAEnabled ? login2FA() : login()" class="login-btn"
                 style="background: var(--accent-color); color: #000; box-shadow: 0 4px 15px rgba(88, 166, 255, 0.4);">
-                ACCEDER CON CONTRASEÑA
+                {{ is2FAEnabled ? 'VERIFICAR Y ENTRAR' : 'ACCEDER CON CONTRASEÑA' }}
             </button>
 
             <div class="login-error" *ngIf="loginError" style="margin-top: 1.5rem;">
@@ -37,6 +45,12 @@
                 <h3 style="margin-bottom: 0.5rem; color: #fff;">Acceso Protegido</h3>
                 <p style="font-size: 0.85rem; color: var(--secondary-text);">Escanea tu huella para desbloquear el
                     monitor.</p>
+            </div>
+
+            <div class="login-form-group" *ngIf="is2FAEnabled" style="margin-bottom: 1.5rem;">
+                <label class="login-label" style="color: var(--accent-color);">GOOGLE AUTH CODE (2FA)</label>
+                <input type="text" [(ngModel)]="login2FACode" name="otp" class="login-input" placeholder="000000"
+                    maxlength="6" style="text-align: center; font-size: 1.1rem; border-color: var(--accent-color);">
             </div>
 
             <button type="button" (click)="loginWithBiometrics()" class="login-btn biometric-btn"
@@ -409,14 +423,51 @@
                             style="width: 100%; border: 1px solid #30363d;">
                         <small style="color: var(--secondary-text); display: block; margin-top: 0.3rem;">
                             Tip: Send /id to <span style="color: var(--accent-color); cursor: pointer;"
-                                (click)="openLink('https://t.me/userinfobot')">&#64;userinfobot</span> to get your Chat
-                            ID.
+                                (click)="openLink('https://t.me/userinfobot')">@userinfobot</span> to get your Chat ID.
                         </small>
                     </div>
                     <button (click)="testTelegram()" class="pause-btn"
                         style="width: 100%; margin-top: 1rem; background: #0088cc; color: white; border: none;">
                         TEST TELEGRAM
                     </button>
+                </div>
+
+                <div style="margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid #30363d;">
+                    <h3 style="font-size: 1rem; margin-bottom: 1rem; color: #6f42c1;">🔐 GOOGLE AUTHENTICATOR (2FA)</h3>
+
+                    <div *ngIf="!is2FAEnabled && !show2FASetup">
+                        <p style="font-size: 0.8rem; color: var(--secondary-text); margin-bottom: 1rem;">
+                            Refuerza la seguridad de tu PC permitiendo solo el acceso con código TOTP.
+                        </p>
+                        <button (click)="start2FASetup()" class="pause-btn"
+                            style="width: 100%; background: #6f42c1; color: white;">
+                            CONFIGURAR 2FA
+                        </button>
+                    </div>
+
+                    <div *ngIf="show2FASetup"
+                        style="background: rgba(0,0,0,0.3); padding: 1rem; border-radius: 12px; text-align: center;">
+                        <p style="font-size: 0.8rem; margin-bottom: 1rem;">1. Escanea este código con tu App:</p>
+                        <img [src]="qrCode2FA"
+                            style="width: 180px; background: white; padding: 10px; border-radius: 8px; margin-bottom: 1rem;">
+                        <p style="font-size: 0.8rem; margin-bottom: 0.5rem;">2. Ingresa el código de 6 dígitos:</p>
+                        <input type="text" [(ngModel)]="verificationCode2FA" class="search-input" placeholder="000000"
+                            maxlength="6"
+                            style="text-align: center; font-size: 1.2rem; margin-bottom: 1rem; width: 100%;">
+                        <button (click)="verifyAndSave2FA()" class="pause-btn"
+                            style="width: 100%; background: var(--success); color: white;">
+                            VINCULAR AUTHENTICATOR
+                        </button>
+                    </div>
+
+                    <div *ngIf="is2FAEnabled"
+                        style="display: flex; justify-content: space-between; align-items: center; background: rgba(35, 134, 54, 0.1); padding: 1rem; border-radius: 8px; border: 1px solid var(--success);">
+                        <span style="color: var(--success); font-weight: bold; font-size: 0.9rem;">✅ 2FA ACTIVO</span>
+                        <button (click)="disable2FA()"
+                            style="background: none; border: none; color: var(--danger); cursor: pointer; font-size: 0.75rem; text-decoration: underline;">
+                            Desactivar
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>

@@ -1,9 +1,14 @@
 import { Injectable, OnModuleInit } from '@nestjs/common';
 import * as si from 'systeminformation';
 import * as Docker from 'dockerode';
+import { authenticator } from 'otplib';
+import * as qrcode from 'qrcode';
+import * as fs from 'fs';
+import * as path from 'path';
 
 @Injectable()
 export class MonitorService implements OnModuleInit {
+    private readonly CONFIG_PATH = path.join(process.cwd(), 'katrix-config.json');
     private docker: Docker;
     private lastContainerCount = 0;
     private cpuAlertSent = false;
@@ -348,6 +353,55 @@ Memoria segura disponible: ${Math.round(safeMB)} MB.`;
         }
 
         return "🤔 No entiendo ese comando. Escribí *Hola* para ver el menú.";
+    }
+
+    async get2FAConfig() {
+        if (!fs.existsSync(this.CONFIG_PATH)) {
+            return { enabled: false };
+        }
+        const config = JSON.parse(fs.readFileSync(this.CONFIG_PATH, 'utf8'));
+        return { enabled: !!config.otpSecret };
+    }
+
+    async setup2FA() {
+        const secret = authenticator.generateSecret();
+        const otpauth = authenticator.keyuri('admin', 'KatrixMonitor', secret);
+        const qrCode = await qrcode.toDataURL(otpauth);
+
+        // Save pending secret (don't commit yet until verified)
+        return { secret, qrCode };
+    }
+
+    async verifyAndSave2FA(secret: string, code: string) {
+        const isValid = authenticator.verify({ token: code, secret });
+        if (isValid) {
+            let config = {};
+            if (fs.existsSync(this.CONFIG_PATH)) {
+                config = JSON.parse(fs.readFileSync(this.CONFIG_PATH, 'utf8'));
+            }
+            config['otpSecret'] = secret;
+            fs.writeFileSync(this.CONFIG_PATH, JSON.stringify(config, null, 2));
+            return { success: true };
+        }
+        return { success: false, message: 'Código inválido' };
+    }
+
+    async validate2FALogin(code: string) {
+        if (!fs.existsSync(this.CONFIG_PATH)) return { success: false };
+        const config = JSON.parse(fs.readFileSync(this.CONFIG_PATH, 'utf8'));
+        if (!config.otpSecret) return { success: false };
+
+        const isValid = authenticator.verify({ token: code, secret: config.otpSecret });
+        return { success: isValid };
+    }
+
+    async disable2FA() {
+        if (fs.existsSync(this.CONFIG_PATH)) {
+            const config = JSON.parse(fs.readFileSync(this.CONFIG_PATH, 'utf8'));
+            delete config.otpSecret;
+            fs.writeFileSync(this.CONFIG_PATH, JSON.stringify(config, null, 2));
+        }
+        return { success: true };
     }
 
     private formatUptime(seconds: number): string {

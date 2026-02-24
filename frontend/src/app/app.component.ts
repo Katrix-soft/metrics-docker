@@ -17,9 +17,18 @@ export class AppComponent implements OnInit, OnDestroy, AfterViewInit {
     paused = false;
     isLoggedIn = false;
     isBiometricLinked = false;
+    is2FAEnabled = false;
     biometrySupported = false;
+
     loginPassword = '';
+    login2FACode = '';
     loginError = '';
+
+    // 2FA Setup
+    show2FASetup = false;
+    pending2FASecret = '';
+    qrCode2FA = '';
+    verificationCode2FA = '';
 
     showLogs = false;
     currentLogs = '';
@@ -60,6 +69,7 @@ export class AppComponent implements OnInit, OnDestroy, AfterViewInit {
     ngOnInit() {
         const token = localStorage.getItem('katrix_token');
         this.isBiometricLinked = localStorage.getItem('katrix_bio_linked') === 'true';
+        this.check2FAStatus();
 
         if (token === 'katrix-secret-token') {
             this.isLoggedIn = true;
@@ -102,6 +112,65 @@ export class AppComponent implements OnInit, OnDestroy, AfterViewInit {
                 }
             },
             error: () => this.loginError = 'Error de conexión con el servidor.'
+        });
+    }
+
+    login2FA() {
+        if (!this.login2FACode) return;
+        this.http.post('/api/2fa/login', { code: this.login2FACode }).subscribe({
+            next: (res: any) => {
+                if (res.success) {
+                    this.isLoggedIn = true;
+                    localStorage.setItem('katrix_token', res.token);
+                    this.startApp();
+                } else {
+                    this.loginError = 'Código 2FA incorrecto.';
+                }
+            },
+            error: () => this.loginError = 'Error al validar 2FA.'
+        });
+    }
+
+    check2FAStatus() {
+        this.http.get('/api/2fa/config').subscribe((res: any) => {
+            this.is2FAEnabled = res.enabled;
+        });
+    }
+
+    start2FASetup() {
+        this.http.post('/api/2fa/setup', {}).subscribe((res: any) => {
+            this.pending2FASecret = res.secret;
+            this.qrCode2FA = res.qrCode;
+            this.show2FASetup = true;
+        });
+    }
+
+    verifyAndSave2FA() {
+        this.http.post('/api/2fa/verify', {
+            secret: this.pending2FASecret,
+            code: this.verificationCode2FA
+        }).subscribe({
+            next: (res: any) => {
+                if (res.success) {
+                    this.is2FAEnabled = true;
+                    this.show2FASetup = false;
+                    this.statusMessage = '✅ Google Authenticator activado';
+                    this.clearStatus();
+                } else {
+                    this.statusMessage = '❌ Código incorrecto';
+                    this.clearStatus();
+                }
+            },
+            error: () => this.statusMessage = '❌ Error de red'
+        });
+    }
+
+    disable2FA() {
+        if (!confirm('¿Seguro que quieres desactivar la 2FA?')) return;
+        this.http.post('/api/2fa/disable', {}).subscribe(() => {
+            this.is2FAEnabled = false;
+            this.statusMessage = '✅ 2FA desactivada';
+            this.clearStatus();
         });
     }
 
