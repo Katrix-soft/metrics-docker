@@ -80,6 +80,19 @@
 </div>
 
 <div class="container" *ngIf="isLoggedIn">
+    <!-- Custom Confirm Modal -->
+    <div class="confirm-modal-overlay" *ngIf="showConfirm">
+        <div class="confirm-modal">
+            <span class="confirm-icon">{{confirmIcon}}</span>
+            <h2 class="confirm-title">{{confirmTitle}}</h2>
+            <p class="confirm-text">{{confirmText}}</p>
+            <div class="confirm-actions">
+                <button class="confirm-btn secondary" (click)="showConfirm = false">Cancelar</button>
+                <button class="confirm-btn" [class.danger]="isDangerAction" [class.primary]="!isDangerAction"
+                    (click)="confirmAction()">Confirmar</button>
+            </div>
+        </div>
+    </div>
     <!-- Biometric Link Invitation Modal -->
     <div class="modal-overlay" *ngIf="showBioSetupPrompt" (click)="showBioSetupPrompt = false">
         <div class="modal" (click)="$event.stopPropagation()"

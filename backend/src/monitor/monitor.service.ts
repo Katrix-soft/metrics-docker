@@ -113,35 +113,40 @@ export class MonitorService implements OnModuleInit {
                     // 100% RAM SAVING: Instead of stopping, apply a strict 16MB limit if idle for 15+ cycles
                     if (currentIdle >= 15) {
                         const targetMB = 16;
+                        const bytes = targetMB * 1024 * 1024;
                         await container.update({
-                            Memory: targetMB * 1024 * 1024,
-                            MemoryReservation: Math.floor((targetMB * 0.5) * 1024 * 1024)
+                            Memory: bytes,
+                            MemorySwap: bytes,
+                            MemoryReservation: Math.floor(6 * 1024 * 1024)
                         }).catch(() => { });
-                        // Removed stop logic as per user request
                         continue;
                     }
 
                     let targetMB = 0;
                     if (name.includes('backend') || name.includes('api')) {
-                        if (memUsedMB > (aggressive ? 60 : 90)) targetMB = aggressive ? 48 : 80;
+                        if (memUsedMB > (aggressive ? 60 : 90)) targetMB = aggressive ? 64 : 96;
                     } else if (name.includes('frontend') && memUsedMB > 25) {
-                        targetMB = 16;
+                        targetMB = 24;
                     } else if ((name.includes('postgres') || name.includes('db')) && memUsedMB > 50) {
-                        targetMB = aggressive ? 40 : 64;
+                        targetMB = aggressive ? 64 : 96;
                     }
 
                     if (targetMB > 0) {
+                        const bytes = targetMB * 1024 * 1024;
                         await container.update({
-                            Memory: targetMB * 1024 * 1024,
-                            MemoryReservation: Math.floor((targetMB * 0.5) * 1024 * 1024)
+                            Memory: bytes,
+                            MemorySwap: bytes,
+                            MemoryReservation: Math.floor(12 * 1024 * 1024)
                         }).catch(() => { });
                     }
                 } else {
                     // Service is being used! Give it RAM back and reset timer
                     this.idleTracker.set(c.Id, 0);
-                    if (stats.memory_stats.limit < 150 * 1024 * 1024) {
+                    // Check if current limit is very low (e.g. 16MB or 24MB)
+                    if (stats.memory_stats.limit < 100 * 1024 * 1024) {
                         await container.update({
                             Memory: 512 * 1024 * 1024,
+                            MemorySwap: 1024 * 1024 * 1024, // Allow some swap when active
                             MemoryReservation: 128 * 1024 * 1024
                         }).catch(() => { });
                     }
@@ -424,21 +429,31 @@ export class MonitorService implements OnModuleInit {
             const updateConfig: any = {};
 
             if (memoryLimit > 0) {
-                // Docker minimum is 6MB. If user puts less, we force 6MB.
-                const safeMemory = Math.max(memoryLimit, 6);
-                updateConfig.Memory = Math.floor(safeMemory * 1024 * 1024);
-                // Also set Reservation to avoid potential Docker conflicts
-                updateConfig.MemoryReservation = Math.floor((safeMemory / 2) * 1024 * 1024);
+                // Docker minimum is 6MB.
+                const safeMemory = Math.max(memoryLimit, 12);
+                const memoryBytes = Math.floor(safeMemory * 1024 * 1024);
+
+                updateConfig.Memory = memoryBytes;
+                // FORCE MEMORY DOWN: Set MemorySwap to same as Memory to disable extra swap usage
+                // This forces the container to stay within the 16/32MB limit.
+                updateConfig.MemorySwap = memoryBytes;
+
+                // Set Reservation to very low to signal low priority to kernel
+                updateConfig.MemoryReservation = Math.floor(6 * 1024 * 1024);
             }
 
             if (cpuLimit > 0) {
+                // 100% CPU = 1000000000 NanoCPUs
                 updateConfig.NanoCPUs = Math.floor((cpuLimit / 100) * 1000000000);
             }
 
-            return await container.update(updateConfig);
+            const result = await container.update(updateConfig);
+
+            // For checking effectiveness in logs
+            console.log(`Updated container ${id}: Mem=${memoryLimit}MB, CPU=${cpuLimit}%`);
+            return result;
         } catch (error: any) {
             console.error('Docker update error:', error);
-            // Extracts the specific error from Docker daemon
             const reason = error.json?.message || error.message || 'Restriccion de Docker';
             throw new Error(reason);
         }

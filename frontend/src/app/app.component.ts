@@ -43,6 +43,14 @@ export class AppComponent implements OnInit, OnDestroy, AfterViewInit {
     selectedMemory = 128;
     selectedCpu = 50;
 
+    // Custom Confirm Modal
+    showConfirm = false;
+    confirmTitle = '';
+    confirmText = '';
+    confirmIcon = '⚠️';
+    confirmAction: () => void = () => { };
+    isDangerAction = false;
+
     // WhatsApp settings
     waPhone = '';
     waApiKey = '';
@@ -169,13 +177,32 @@ export class AppComponent implements OnInit, OnDestroy, AfterViewInit {
         });
     }
 
+    openConfirm(title: string, text: string, icon: string, action: () => void, isDanger: boolean = false) {
+        this.confirmTitle = title;
+        this.confirmText = text;
+        this.confirmIcon = icon;
+        this.confirmAction = () => {
+            action();
+            this.showConfirm = false;
+        };
+        this.isDangerAction = isDanger;
+        this.showConfirm = true;
+    }
+
     disable2FA() {
-        if (!confirm('¿Seguro que quieres desactivar la 2FA?')) return;
-        this.http.post('/api/2fa/disable', {}).subscribe(() => {
-            this.is2FAEnabled = false;
-            this.statusMessage = '✅ 2FA desactivada';
-            this.clearStatus();
-        });
+        this.openConfirm(
+            'Desactivar 2FA',
+            '¿Estás seguro de que quieres desactivar la verificación en dos pasos? Tu cuenta será menos segura.',
+            '🔐',
+            () => {
+                this.http.post('/api/2fa/disable', {}).subscribe(() => {
+                    this.is2FAEnabled = false;
+                    this.statusMessage = '✅ 2FA desactivada';
+                    this.clearStatus();
+                });
+            },
+            true
+        );
     }
 
     async loginWithBiometrics() {
@@ -421,13 +448,19 @@ export class AppComponent implements OnInit, OnDestroy, AfterViewInit {
     }
 
     stopAllIdle() {
-        if (!confirm('¿Seguro que quieres detener todos los contenedores inactivos (IDLE)?')) return;
-        this.statusMessage = '⏳ Hibernando servicios inactivos...';
-        this.http.post('/api/docker/stop-idle', {}).subscribe((res: any) => {
-            this.statusMessage = `✨ Se hibernaron ${res.count} servicios.`;
-            this.clearStatus();
-            this.fetchData();
-        });
+        this.openConfirm(
+            'Optimización Maestra',
+            '¿Quieres reducir la RAM de todos los contenedores inactivos? Se mantendrán encendidos pero con el mínimo consumo (16MB).',
+            '⚡',
+            () => {
+                this.statusMessage = '⏳ Optimizando servicios inactivos...';
+                this.http.post('/api/docker/stop-idle', {}).subscribe((res: any) => {
+                    this.statusMessage = `✨ ${res.message}`;
+                    this.clearStatus();
+                    this.fetchData();
+                });
+            }
+        );
     }
 
     getLogs(container: any) {
