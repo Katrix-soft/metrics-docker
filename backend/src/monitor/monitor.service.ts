@@ -14,6 +14,7 @@ export class MonitorService implements OnModuleInit {
     private cpuAlertSent = false;
     private ramAlertSent = false;
     private diskAlertSent = false;
+    private idleTracker: Map<string, number> = new Map();
 
     constructor() {
         const isWindows = process.platform === 'win32';
@@ -90,25 +91,36 @@ export class MonitorService implements OnModuleInit {
 
                 // SQUEEZE LOGIC: If CPU is idle (< 0.1%), force memory down
                 if (cpuUsage < 0.1) {
+                    const currentIdle = (this.idleTracker.get(c.Id) || 0) + 1;
+                    this.idleTracker.set(c.Id, currentIdle);
+
+                    // 100% RAM SAVING: If idle for 15+ cycles (minutes), STOP IT.
+                    if (currentIdle >= 15) {
+                        await container.stop().catch(() => { });
+                        await this.sendWhatsApp(`🌙 AUTO-HIBERNATE: '${name}' detenido por inactividad prolongada (Protección de RAM).`);
+                        this.idleTracker.delete(c.Id);
+                        continue;
+                    }
+
                     let targetMB = 0;
                     if (name.includes('backend') || name.includes('api')) {
-                        if (memUsedMB > (aggressive ? 70 : 100)) targetMB = aggressive ? 64 : 96;
-                    } else if (name.includes('frontend') && memUsedMB > 30) {
-                        targetMB = 24;
-                    } else if ((name.includes('postgres') || name.includes('db')) && memUsedMB > 60) {
-                        targetMB = aggressive ? 48 : 64;
+                        if (memUsedMB > (aggressive ? 60 : 90)) targetMB = aggressive ? 48 : 80;
+                    } else if (name.includes('frontend') && memUsedMB > 25) {
+                        targetMB = 16;
+                    } else if ((name.includes('postgres') || name.includes('db')) && memUsedMB > 50) {
+                        targetMB = aggressive ? 40 : 64;
                     }
 
                     if (targetMB > 0) {
                         await container.update({
                             Memory: targetMB * 1024 * 1024,
-                            MemoryReservation: Math.floor((targetMB * 0.6) * 1024 * 1024)
+                            MemoryReservation: Math.floor((targetMB * 0.5) * 1024 * 1024)
                         }).catch(() => { });
                     }
-                } else if (cpuUsage > 2) {
-                    // SUDDEN LOAD! Release the limits immediately to avoid lag/crashes
-                    // We give it a comfortable 300MB buffer if it's being used
-                    if (stats.memory_stats.limit < 200 * 1024 * 1024) {
+                } else {
+                    // Service is being used! Give it RAM back and reset timer
+                    this.idleTracker.set(c.Id, 0);
+                    if (stats.memory_stats.limit < 150 * 1024 * 1024) {
                         await container.update({
                             Memory: 512 * 1024 * 1024,
                             MemoryReservation: 128 * 1024 * 1024
