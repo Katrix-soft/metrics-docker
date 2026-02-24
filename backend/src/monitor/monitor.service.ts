@@ -198,66 +198,73 @@ export class MonitorService implements OnModuleInit {
     async optimizeSystem() {
         try {
             // 1. Traditional Pruning (Disk)
+            // Fix: Use proper filters for pruning all unused images
             const pruneResults = await Promise.allSettled([
-                this.docker.pruneContainers(),
-                this.docker.pruneImages({ dall: true }),
-                this.docker.pruneNetworks(),
-                this.docker.pruneVolumes(),
+                this.docker.pruneContainers().catch(() => ({})),
+                this.docker.pruneImages({ filters: { dangling: ["false"] } }).catch(() => ({})),
+                this.docker.pruneNetworks().catch(() => ({})),
+                this.docker.pruneVolumes().catch(() => ({})),
             ]);
 
             const freedSpace = pruneResults[1].status === 'fulfilled' ? (pruneResults[1].value as any).SpaceReclaimed || 0 : 0;
             const freedMB = (freedSpace / 1024 / 1024).toFixed(2);
 
             // 2. Active RAM Balancing (Memory)
-            // We identify running containers and apply smart limits to force RAM release
             const containers = await this.docker.listContainers();
             let optimizedCount = 0;
 
             for (const containerInfo of containers) {
-                const container = this.docker.getContainer(containerInfo.Id);
-                const stats = await container.stats({ stream: false });
+                try {
+                    const container = this.docker.getContainer(containerInfo.Id);
 
-                // CPU is very low? (Idling)
-                const cpuDelta = stats.cpu_stats.cpu_usage.total_usage - stats.precpu_stats.cpu_usage.total_usage;
-                const systemDelta = stats.cpu_stats.system_cpu_usage - stats.precpu_stats.system_cpu_usage;
-                const cpuUsage = systemDelta > 0 ? (cpuDelta / systemDelta) * stats.cpu_stats.online_cpus * 100 : 0;
+                    // Non-blocking stats check with timeout
+                    const stats = await Promise.race([
+                        container.stats({ stream: false }),
+                        new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout stats')), 2000))
+                    ]) as any;
 
-                const memUsedMB = stats.memory_stats.usage / 1024 / 1024;
-                const name = containerInfo.Names[0].toLowerCase();
+                    if (!stats || !stats.memory_stats || !stats.memory_stats.usage) continue;
 
-                // PROTECT INFRASTRUCTURE: Never throttle core services
-                if (this.isProtected(name)) continue;
+                    const cpuDelta = stats.cpu_stats.cpu_usage.total_usage - stats.precpu_stats.cpu_usage.total_usage;
+                    const systemDelta = stats.cpu_stats.system_cpu_usage - stats.precpu_stats.system_cpu_usage;
+                    const cpuUsage = systemDelta > 0 ? (cpuDelta / systemDelta) * stats.cpu_stats.online_cpus * 100 : 0;
 
-                // Advanced Logic: If container is consuming RAM but not doing anything, CAP IT!
-                // This forces the VM to release cached memory.
-                if (cpuUsage < 0.1) {
-                    let newLimitMB = 0;
+                    const memUsedMB = stats.memory_stats.usage / 1024 / 1024;
+                    const name = containerInfo.Names[0].toLowerCase();
 
-                    if ((name.includes('backend') || name.includes('api')) && memUsedMB > 80) {
-                        newLimitMB = 96; // 96MB for idle backends
-                    } else if (name.includes('postgres') || name.includes('db') || name.includes('redis')) {
-                        newLimitMB = Math.max(48, Math.floor(memUsedMB * 1.1)); // DBs are tricky, 10% buffer
-                    } else if (name.includes('frontend') && memUsedMB > 30) {
-                        newLimitMB = 32;
+                    if (this.isProtected(name)) continue;
+
+                    if (cpuUsage < 0.1) {
+                        let newLimitMB = 0;
+                        if ((name.includes('backend') || name.includes('api')) && memUsedMB > 80) {
+                            newLimitMB = 96;
+                        } else if (name.includes('postgres') || name.includes('db') || name.includes('redis')) {
+                            newLimitMB = Math.max(48, Math.floor(memUsedMB * 1.1));
+                        } else if (name.includes('frontend') && memUsedMB > 30) {
+                            newLimitMB = 32;
+                        }
+
+                        if (newLimitMB > 0) {
+                            await container.update({
+                                Memory: Math.floor(newLimitMB * 1024 * 1024),
+                                MemoryReservation: Math.floor((newLimitMB / 2) * 1024 * 1024)
+                            }).catch(() => { });
+                            optimizedCount++;
+                        }
                     }
-
-                    if (newLimitMB > 0) {
-                        await container.update({
-                            Memory: newLimitMB * 1024 * 1024,
-                            MemoryReservation: (newLimitMB / 2) * 1024 * 1024
-                        });
-                        optimizedCount++;
-                    }
+                } catch (containerErr) {
+                    // Continue with next container if one fails
+                    continue;
                 }
             }
 
             return {
                 success: true,
-                message: `✨ Optimización Maestra: ${freedMB}MB de disco liberados y ${optimizedCount} contenedores balanceados para ahorro de RAM.`
+                message: `✨ Optimización Maestra: ${freedMB}MB de disco liberados y ${optimizedCount} contenedores balanceados.`
             };
         } catch (error: any) {
             console.error('Optimization error:', error);
-            return { success: false, message: 'Optimization error: ' + error.message };
+            return { success: false, message: 'Optimization error: ' + (error.message || 'Error desconocido') };
         }
     }
 
