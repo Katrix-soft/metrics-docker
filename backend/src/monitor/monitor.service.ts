@@ -16,6 +16,22 @@ export class MonitorService implements OnModuleInit {
     private diskAlertSent = false;
     private idleTracker: Map<string, number> = new Map();
 
+    private isProtected(name: string): boolean {
+        const n = name.toLowerCase().replace('/', '');
+        return (
+            n.includes('metrica') ||
+            n.includes('portainer') ||
+            n.includes('nginx') ||
+            n.includes('proxy') ||
+            n.includes('npm') ||
+            n.includes('gateway') ||
+            n.includes('terminal') ||
+            n.includes('duckdna') || // common dyndns/proxies
+            n.includes('traefik') ||
+            n.includes('watchtower')
+        );
+    }
+
     constructor() {
         const isWindows = process.platform === 'win32';
         const socketPath = isWindows ? '//./pipe/docker_engine' : '/var/run/docker.sock';
@@ -86,8 +102,8 @@ export class MonitorService implements OnModuleInit {
                 const name = c.Names[0].toLowerCase();
                 const memUsedMB = stats.memory_stats.usage / 1024 / 1024;
 
-                // Monitor itself and basic tools should be excluded
-                if (name.includes('metrica') || name.includes('portainer') || name.includes('terminal')) continue;
+                // PROTECT INFRASTRUCTURE: Never touch proxy, portainer or metrics
+                if (this.isProtected(name)) continue;
 
                 // SQUEEZE LOGIC: If CPU is idle (< 0.1%), force memory down
                 if (cpuUsage < 0.1) {
@@ -205,6 +221,9 @@ export class MonitorService implements OnModuleInit {
 
                 const memUsedMB = stats.memory_stats.usage / 1024 / 1024;
                 const name = containerInfo.Names[0].toLowerCase();
+
+                // PROTECT INFRASTRUCTURE: Never throttle core services
+                if (this.isProtected(name)) continue;
 
                 // Advanced Logic: If container is consuming RAM but not doing anything, CAP IT!
                 // This forces the VM to release cached memory.
