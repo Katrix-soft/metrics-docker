@@ -19,6 +19,7 @@ export class AppComponent implements OnInit, OnDestroy, AfterViewInit {
     isBiometricLinked = false;
     is2FAEnabled = false;
     biometrySupported = false;
+    showBioSetupPrompt = false;
 
     loginPassword = '';
     login2FACode = '';
@@ -105,6 +106,9 @@ export class AppComponent implements OnInit, OnDestroy, AfterViewInit {
             next: (res: any) => {
                 if (res.success) {
                     this.isLoggedIn = true;
+                    if (this.biometrySupported && !this.isBiometricLinked) {
+                        this.showBioSetupPrompt = true;
+                    }
                     localStorage.setItem('katrix_token', res.token);
                     this.startApp();
                 } else {

@@ -80,26 +80,37 @@
 </div>
 
 <div class="container" *ngIf="isLoggedIn">
-    <!-- Biometric Link Suggestion -->
-    <div class="bio-link-banner" *ngIf="biometrySupported && !isBiometricLinked">
-        <div style="display: flex; align-items: center; gap: 1rem;">
-            <div
-                style="background: var(--accent-color); color: #0d1117; padding: 0.5rem; border-radius: 50%; display: flex;">
-                <svg width="20" height="20" fill="currentColor" viewBox="0 0 16 16">
-                    <path
-                        d="M8 1a7 7 0 1 0 0 14A7 7 0 0 0 8 1zM7 11.5a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 0 1h-1a.5.5 0 0 1-.5-.5zm.5-7a.5.5 0 0 1 .5.5v5a.5.5 0 0 1-1 0v-5a.5.5 0 0 1 .5-.5z" />
-                </svg>
+    <!-- Biometric Link Invitation Modal -->
+    <div class="modal-overlay" *ngIf="showBioSetupPrompt" (click)="showBioSetupPrompt = false">
+        <div class="modal" (click)="$event.stopPropagation()"
+            style="max-width: 420px; text-align: center; border: 1px solid var(--accent-color); border-radius: 24px; overflow: hidden;">
+            <div class="modal-header" style="justify-content: center; border: none; padding-top: 2.5rem;">
+                <div
+                    style="width: 80px; height: 80px; background: rgba(88, 166, 255, 0.1); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-bottom: 0.5rem; animation: pulse 2s infinite;">
+                    <svg width="45" height="45" fill="var(--accent-color)" viewBox="0 0 16 16">
+                        <path
+                            d="M8 8a3 3 0 1 0 0-6 3 3 0 0 0 0 6zm2-3a2 2 0 1 1-4 0 2 2 0 0 1 4 0zm4 8c0 1-1 1-1 1H3s-1 0-1-1 1-4 6-4 6 3 6 4zm-1-.004c-.001-.246-.154-.986-.832-1.664C11.516 10.68 10.289 10 8 10c-2.29 0-3.516.68-4.168 1.332-.678.678-.83 1.418-.832 1.664h10z" />
+                    </svg>
+                </div>
             </div>
-            <div>
-                <strong style="display: block; color: var(--accent-color);">¿Activar Acceso Biométrico?</strong>
-                <span style="font-size: 0.85rem; color: var(--secondary-text);">Entra más rápido la próxima vez con tu
-                    huella dactilar o Face ID.</span>
+            <div class="modal-body" style="padding: 0 2.5rem 2.5rem;">
+                <h2 style="color: #fff; margin-bottom: 1rem; font-size: 1.5rem;">¿Usar Huella o Cara?</h2>
+                <p style="color: var(--secondary-text); font-size: 1rem; line-height: 1.6; margin-bottom: 2.5rem;">
+                    Tu dispositivo soporta biometría. Actívala ahora para entrar al monitor al instante sin volver a
+                    escribir la contraseña.
+                </p>
+                <div style="display: flex; flex-direction: column; gap: 1rem;">
+                    <button (click)="activateBiometrics(); showBioSetupPrompt = false" class="login-btn"
+                        style="background: var(--accent-color); color: #000; font-weight: 800; border-radius: 16px; height: 55px; font-size: 1.1rem; box-shadow: 0 4px 15px rgba(88, 166, 255, 0.3);">
+                        VINCULAR MI HUELLA
+                    </button>
+                    <button (click)="showBioSetupPrompt = false"
+                        style="background: transparent; border: 1px solid #30363d; color: var(--secondary-text); padding: 1rem; border-radius: 16px; cursor: pointer; font-size: 0.95rem; font-weight: 600; transition: all 0.2s;">
+                        MÁS TARDE
+                    </button>
+                </div>
             </div>
         </div>
-        <button class="pause-btn" (click)="activateBiometrics()"
-            style="background: var(--accent-color); color: #0d1117; border: none; padding: 0.6rem 1.2rem;">
-            VINCULAR AHORA
-        </button>
     </div>
 
     <header class="header">
