@@ -35,6 +35,16 @@ export class MonitorController {
         return this.monitorService.getContainerLogs(id);
     }
 
+    @Post('docker/hibernate/:id')
+    async hibernateContainer(@Param('id') id: string) {
+        return this.monitorService.hibernateContainer(id);
+    }
+
+    @Post('docker/stop-idle')
+    async stopAllIdle() {
+        return this.monitorService.stopAllIdle();
+    }
+
     @Post('docker/update/:id')
     async updateResources(
         @Param('id') id: string,

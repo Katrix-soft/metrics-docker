@@ -134,7 +134,11 @@
             </div>
             <button class="pause-btn" (click)="optimizeSystem()"
                 style="background: #238636; border: 1px solid #1f672a; box-shadow: 0 0 10px rgba(35, 134, 54, 0.4);">
-                🚀 MAGIC OPTIMIZE
+                🚀 OPTIMIZE
+            </button>
+            <button class="pause-btn" (click)="stopAllIdle()"
+                style="background: #3c1e70; border: 1px solid #6f42c1; box-shadow: 0 0 10px rgba(111, 66, 193, 0.3);">
+                💤 HIBERNAR IDLE
             </button>
             <button class="pause-btn" (click)="togglePause()" [class.paused]="paused">
                 {{ paused ? 'RESUME' : 'PAUSE' }}
@@ -239,6 +243,10 @@
                                 [ngClass]="container.status === 'running' ? 'status-running' : 'status-exited'">
                                 {{ container.status.toUpperCase() }}
                             </span>
+                            <span *ngIf="container.isIdle && container.status === 'running'"
+                                style="font-size: 0.6rem; background: rgba(210, 153, 34, 0.2); color: #d29922; padding: 2px 6px; border-radius: 2px; margin-left: 5px; font-weight: bold;">
+                                IDLE
+                            </span>
                         </td>
                         <td>{{ container.cpu }}</td>
                         <td>{{ container.memory }}</td>
@@ -266,6 +274,14 @@
                                     <svg width="14" height="14" fill="currentColor" viewBox="0 0 16 16">
                                         <path
                                             d="M5 3.5h6A1.5 1.5 0 0 1 12.5 5v6a1.5 1.5 0 0 1-1.5 1.5H5A1.5 1.5 0 0 1 3.5 11V5A1.5 1.5 0 0 1 5 3.5z" />
+                                    </svg>
+                                </button>
+                                <button *ngIf="container.status === 'running'"
+                                    (click)="hibernateContainer(container.id)" class="action-btn stop-btn"
+                                    title="Hibernate / Sleep" style="background: #6f42c1;">
+                                    <svg width="14" height="14" fill="currentColor" viewBox="0 0 16 16">
+                                        <path
+                                            d="M6 .278a.768.768 0 0 1 .08.858 7.208 7.208 0 0 0-.878 3.46c0 4.021 3.278 7.277 7.318 7.277.527 0 1.04-.055 1.533-.16a.787.787 0 0 1 .81.316.733.733 0 0 1-.031.893A8.349 8.349 0 0 1 8.344 16C3.734 16 0 12.286 0 7.71 0 4.266 2.114 1.312 5.124.06A.752.752 0 0 1 6 .278z" />
                                     </svg>
                                 </button>
                                 <button (click)="restartContainer(container.id)" class="action-btn restart-btn"

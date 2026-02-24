@@ -344,6 +344,24 @@ export class AppComponent implements OnInit, OnDestroy, AfterViewInit {
         };
     }
 
+    hibernateContainer(id: string) {
+        this.http.post(`/api/docker/hibernate/${id}`, {}).subscribe(() => {
+            this.statusMessage = '✅ Contenedor Hibernado';
+            this.clearStatus();
+            this.fetchData();
+        });
+    }
+
+    stopAllIdle() {
+        if (!confirm('¿Seguro que quieres detener todos los contenedores inactivos (IDLE)?')) return;
+        this.statusMessage = '⏳ Hibernando servicios inactivos...';
+        this.http.post('/api/docker/stop-idle', {}).subscribe((res: any) => {
+            this.statusMessage = `✨ Se hibernaron ${res.count} servicios.`;
+            this.clearStatus();
+            this.fetchData();
+        });
+    }
+
     getLogs(container: any) {
         this.selectedContainer = container;
         this.fetchLogs(container.id);
