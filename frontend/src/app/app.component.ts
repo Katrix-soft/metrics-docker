@@ -216,38 +216,27 @@ export class AppComponent implements OnInit, OnDestroy, AfterViewInit {
         }
 
         try {
-            this.statusMessage = 'Diga "Patata" al sensor...';
+            this.statusMessage = 'Escaneando identidad...';
             const challenge = new Uint8Array(32);
             window.crypto.getRandomValues(challenge);
-
-            // WebAuthn RP ID must be the domain without port/protocol
-            const rpId = window.location.hostname;
 
             const options: any = {
                 publicKey: {
                     challenge: challenge,
-                    rp: { name: "Katrix Monitor Lite", id: rpId },
-                    user: {
-                        id: Uint8Array.from("katrix-user-" + rpId, c => c.charCodeAt(0)),
-                        name: "admin",
-                        displayName: "Admin"
-                    },
-                    pubKeyCredParams: [{ alg: -7, type: "public-key" }],
-                    authenticatorSelection: {
-                        authenticatorAttachment: "platform",
-                        userVerification: "required"
-                    },
-                    timeout: 60000
-                }
+                    rpId: window.location.hostname,
+                    userVerification: "required",
+                },
             };
 
-            await navigator.credentials.create(options);
+            const credential = await navigator.credentials.get(options);
 
-            // If we reach here, user passed local sensor
-            this.isLoggedIn = true;
-            localStorage.setItem('katrix_token', 'katrix-secret-token');
-            this.startApp();
-            this.statusMessage = '✅ Acceso verificado';
+            if (credential) {
+                this.isLoggedIn = true;
+                localStorage.setItem('katrix_token', 'katrix-secret-token');
+                this.startApp();
+                this.statusMessage = '✅ Acceso verificado';
+                this.clearStatus();
+            }
         } catch (e: any) {
             console.error('BioError:', e);
             if (e.name === 'SecurityError') {
@@ -272,11 +261,11 @@ export class AppComponent implements OnInit, OnDestroy, AfterViewInit {
             const options: any = {
                 publicKey: {
                     challenge: challenge,
-                    rp: { name: "Katrix Monitor", id: window.location.hostname },
+                    rp: { name: "NexPulse", id: window.location.hostname },
                     user: {
-                        id: Uint8Array.from("katrix-v3", c => c.charCodeAt(0)),
-                        name: "admin@katrix",
-                        displayName: "Admin Katrix"
+                        id: Uint8Array.from("nexpulse-v1", c => c.charCodeAt(0)),
+                        name: "admin@nexpulse",
+                        displayName: "Admin NexPulse"
                     },
                     pubKeyCredParams: [{ alg: -7, type: "public-key" }],
                     authenticatorSelection: { userVerification: "required" },
