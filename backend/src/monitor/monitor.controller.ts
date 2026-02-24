@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Param, Body } from '@nestjs/common';
+import { Controller, Get, Post, Param, Body, All, Query } from '@nestjs/common';
 import { MonitorService } from './monitor.service';
 
 @Controller('api')
@@ -131,18 +131,25 @@ export class MonitorController {
         return this.monitorService.optimizeSystem();
     }
 
-    @Post('webhook/whatsapp')
-    async handleWhatsAppWebhook(@Body() body: any) {
-        // CallMeBot can send data in various fields depending on configuration
-        const message = body.text || body.message || body.msg || '';
-        const incomingPhone = body.phone || body.sender || '';
+    @All('webhook/whatsapp')
+    async handleWhatsAppWebhook(@Query() query: any, @Body() body: any) {
+        // CallMeBot usually sends webhooks via GET (query) but we support POST (body) too
+        const message = (query.text || query.message || body.text || body.message || '').toString();
+        const incomingPhone = (query.phone || query.sender || body.phone || body.sender || '').toString();
+
+        console.log(`[WhatsApp Webhook] Received from ${incomingPhone}: ${message}`);
 
         const authorizedPhone = '5492616557673';
 
-        // Check if the message is from the authorized number
-        if (incomingPhone.includes(authorizedPhone) || authorizedPhone.includes(incomingPhone)) {
+        // Robust match: remove + or other chars and check if one contains the other
+        const cleanIncoming = incomingPhone.replace(/\D/g, '');
+        const cleanAuthorized = authorizedPhone.replace(/\D/g, '');
+
+        if (cleanIncoming.includes(cleanAuthorized) || cleanAuthorized.includes(cleanIncoming)) {
             const responseMessage = await this.monitorService.processCommand(message);
             await this.monitorService.sendWhatsApp(responseMessage);
+        } else {
+            console.warn(`[WhatsApp Webhook] Unauthorized phone: ${incomingPhone}`);
         }
         return { ok: true };
     }

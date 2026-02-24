@@ -15,6 +15,13 @@ services:
       - TZ=UTC
     expose:
       - "3000"
+    deploy:
+      resources:
+        limits:
+          cpus: '0.50'
+          memory: 512M
+        reservations:
+          memory: 128M
 
   frontend-metrica:
     build:
@@ -33,6 +40,13 @@ services:
     networks:
       - default
       - npm_network
+    deploy:
+      resources:
+        limits:
+          cpus: '0.30'
+          memory: 256M
+        reservations:
+          memory: 64M
 
 networks:
   npm_network:
