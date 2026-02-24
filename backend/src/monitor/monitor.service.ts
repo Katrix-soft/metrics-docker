@@ -511,7 +511,7 @@ export class MonitorService implements OnModuleInit {
         const cmd = input.trim().toLowerCase();
 
         if (cmd === 'hola' || cmd === 'menu' || cmd === '0') {
-            return `👋 ¡Hola! Soy *Katrix Monitor Lite*
+            return `👋 ¡Hola! Soy *NexPulse Monitor*
 ¿En qué puedo ayudarte hoy?
 
 1️⃣ *Estado del Sistema* (RAM/CPU)
@@ -573,7 +573,7 @@ Memoria segura disponible: ${Math.round(safeMB)} MB.`;
 
     async setup2FA() {
         const secret = authenticator.generateSecret();
-        const otpauth = authenticator.keyuri('admin', 'KatrixMonitor', secret);
+        const otpauth = authenticator.keyuri('admin', 'NexPulse', secret);
         const qrCode = await qrcode.toDataURL(otpauth);
 
         // Save pending secret (don't commit yet until verified)
