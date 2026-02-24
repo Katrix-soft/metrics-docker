@@ -348,6 +348,33 @@ export class AppComponent implements OnInit, OnDestroy, AfterViewInit {
         };
     }
 
+    stopContainer(id: string) {
+        this.statusMessage = '⏳ Deteniendo contenedor...';
+        this.http.post(`/api/docker/stop/${id}`, {}).subscribe(() => {
+            this.statusMessage = '✅ Contenedor detenido';
+            this.clearStatus();
+            this.fetchData();
+        });
+    }
+
+    startContainer(id: string) {
+        this.statusMessage = '⏳ Iniciando contenedor...';
+        this.http.post(`/api/docker/start/${id}`, {}).subscribe(() => {
+            this.statusMessage = '✅ Contenedor iniciado';
+            this.clearStatus();
+            this.fetchData();
+        });
+    }
+
+    restartContainer(id: string) {
+        this.statusMessage = '⏳ Reiniciando contenedor...';
+        this.http.post(`/api/docker/restart/${id}`, {}).subscribe(() => {
+            this.statusMessage = '✅ Contenedor reiniciado';
+            this.clearStatus();
+            this.fetchData();
+        });
+    }
+
     hibernateContainer(id: string) {
         this.http.post(`/api/docker/hibernate/${id}`, {}).subscribe(() => {
             this.statusMessage = '✅ Contenedor Hibernado';
