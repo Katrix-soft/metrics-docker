@@ -59,19 +59,64 @@ export class MonitorService implements OnModuleInit {
                 this.ramAlertSent = false;
             }
 
-            // Disk Alert (Threshold 80%)
-            const diskUsage = parseFloat(stats.disk[0]?.use || '0');
-            if (diskUsage > 80 && !this.diskAlertSent) {
-                await this.sendWhatsApp(`💾 ¡Alerta de DISCO! El espacio usado ha superado el 80% (${diskUsage}%). Se recomienda ejecutar MAGIC OPTIMIZE.`);
-                this.diskAlertSent = true;
-            } else if (diskUsage < 75 && this.diskAlertSent) {
-                await this.sendWhatsApp(`✅ Info: El espacio en DISCO se ha liberado (${diskUsage}%).`);
-                this.diskAlertSent = false;
+            if (ramUsage > 85) {
+                // If system RAM is tight, be more aggressive with auto-optimization
+                await this.autoOptimizeRAM(true);
+            } else {
+                await this.autoOptimizeRAM(false);
             }
 
         } catch (error) {
             console.error('Automation Loop Error:', error);
         }
+    }
+
+    private async autoOptimizeRAM(aggressive: boolean) {
+        try {
+            const containers = await this.docker.listContainers();
+            for (const c of containers) {
+                const container = this.docker.getContainer(c.Id);
+                const stats = await container.stats({ stream: false });
+
+                const cpuDelta = stats.cpu_stats.cpu_usage.total_usage - stats.precpu_stats.cpu_usage.total_usage;
+                const systemDelta = stats.cpu_stats.system_cpu_usage - stats.precpu_stats.system_cpu_usage;
+                const cpuUsage = systemDelta > 0 ? (cpuDelta / systemDelta) * stats.cpu_stats.online_cpus * 100 : 0;
+
+                const name = c.Names[0].toLowerCase();
+                const memUsedMB = stats.memory_stats.usage / 1024 / 1024;
+
+                // Monitor itself and basic tools should be excluded
+                if (name.includes('metrica') || name.includes('portainer') || name.includes('terminal')) continue;
+
+                // SQUEEZE LOGIC: If CPU is idle (< 0.1%), force memory down
+                if (cpuUsage < 0.1) {
+                    let targetMB = 0;
+                    if (name.includes('backend') || name.includes('api')) {
+                        if (memUsedMB > (aggressive ? 70 : 100)) targetMB = aggressive ? 64 : 96;
+                    } else if (name.includes('frontend') && memUsedMB > 30) {
+                        targetMB = 24;
+                    } else if ((name.includes('postgres') || name.includes('db')) && memUsedMB > 60) {
+                        targetMB = aggressive ? 48 : 64;
+                    }
+
+                    if (targetMB > 0) {
+                        await container.update({
+                            Memory: targetMB * 1024 * 1024,
+                            MemoryReservation: Math.floor((targetMB * 0.6) * 1024 * 1024)
+                        }).catch(() => { });
+                    }
+                } else if (cpuUsage > 2) {
+                    // SUDDEN LOAD! Release the limits immediately to avoid lag/crashes
+                    // We give it a comfortable 300MB buffer if it's being used
+                    if (stats.memory_stats.limit < 200 * 1024 * 1024) {
+                        await container.update({
+                            Memory: 512 * 1024 * 1024,
+                            MemoryReservation: 128 * 1024 * 1024
+                        }).catch(() => { });
+                    }
+                }
+            }
+        } catch (e) { }
     }
 
     async getSystemStats() {
