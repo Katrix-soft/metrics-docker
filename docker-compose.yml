@@ -16,17 +16,6 @@ services:
     expose:
       - "3000"
 
-  terminal-metrica:
-    image: tsl0922/ttyd:latest
-    container_name: terminal-metrica
-    restart: always
-    # Eliminamos -i lo para que Nginx pueda conectar, y usamos 'sh' por compatibilidad
-    command: ttyd -p 7681 -W sh
-    environment:
-      - TZ=UTC
-    expose:
-      - "7681"
-
   frontend-metrica:
     build:
       context: .
@@ -41,7 +30,6 @@ services:
       - AUTH_PASS=katrix2026
     depends_on:
       - backend-metrica
-      - terminal-metrica
     networks:
       - default
       - npm_network

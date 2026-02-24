@@ -25,7 +25,6 @@ export class MonitorService implements OnModuleInit {
             n.includes('proxy') ||
             n.includes('npm') ||
             n.includes('gateway') ||
-            n.includes('terminal') ||
             n.includes('duckdna') || // common dyndns/proxies
             n.includes('traefik') ||
             n.includes('watchtower')

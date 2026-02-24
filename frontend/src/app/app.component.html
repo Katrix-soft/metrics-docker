@@ -167,9 +167,6 @@
             <button class="pause-btn" (click)="togglePause()" [class.paused]="paused">
                 {{ paused ? 'RESUME' : 'PAUSE' }}
             </button>
-            <button class="pause-btn" (click)="toggleTerminal()" style="background: #6f42c1;">
-                {{ showTerminal ? 'CLOSE TERMINAL' : 'OPEN TERMINAL' }}
-            </button>
             <button class="pause-btn" (click)="showSettings = true" style="background: #24292f;">
                 ALERT SETTINGS
             </button>
@@ -178,13 +175,6 @@
             </button>
         </div>
     </header>
-
-    <!-- Terminal Section -->
-    <div class="card" *ngIf="showTerminal"
-        style="margin-bottom: 2rem; padding: 0; background: #000; overflow: hidden; height: 500px;">
-        <div class="card-title" style="padding: 1rem; background: #1a1a1a;">SECURE LINUX TERMINAL</div>
-        <iframe src="/terminal/" style="width: 100%; height: calc(100% - 40px); border: none;"></iframe>
-    </div>
 
     <div class="dashboard-grid">
         <div class="card">

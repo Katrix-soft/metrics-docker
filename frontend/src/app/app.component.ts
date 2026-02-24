@@ -37,7 +37,6 @@ export class AppComponent implements OnInit, OnDestroy, AfterViewInit {
     statusMessage = '';
     searchTerm = '';
     logInterval: any;
-    showTerminal = false;
     showEditModal = false;
     showSettings = false;
     selectedMemory = 128;
@@ -328,10 +327,6 @@ export class AppComponent implements OnInit, OnDestroy, AfterViewInit {
 
     togglePause() {
         this.paused = !this.paused;
-    }
-
-    toggleTerminal() {
-        this.showTerminal = !this.showTerminal;
     }
 
     getRecommendation(name: string): string {
