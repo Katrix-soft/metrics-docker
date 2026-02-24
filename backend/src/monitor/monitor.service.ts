@@ -110,11 +110,14 @@ export class MonitorService implements OnModuleInit {
                     const currentIdle = (this.idleTracker.get(c.Id) || 0) + 1;
                     this.idleTracker.set(c.Id, currentIdle);
 
-                    // 100% RAM SAVING: If idle for 15+ cycles (minutes), STOP IT.
+                    // 100% RAM SAVING: Instead of stopping, apply a strict 16MB limit if idle for 15+ cycles
                     if (currentIdle >= 15) {
-                        await container.stop().catch(() => { });
-                        await this.sendWhatsApp(`🌙 AUTO-HIBERNATE: '${name}' detenido por inactividad prolongada (Protección de RAM).`);
-                        this.idleTracker.delete(c.Id);
+                        const targetMB = 16;
+                        await container.update({
+                            Memory: targetMB * 1024 * 1024,
+                            MemoryReservation: Math.floor((targetMB * 0.5) * 1024 * 1024)
+                        }).catch(() => { });
+                        // Removed stop logic as per user request
                         continue;
                     }
 
@@ -274,11 +277,16 @@ export class MonitorService implements OnModuleInit {
                     const memUsed = containerStats.memory_stats.usage;
                     const memLimit = containerStats.memory_stats.limit;
 
+                    const stack = containerInfo.Labels['com.docker.compose.project'] ||
+                        containerInfo.Labels['com.docker.stack.namespace'] ||
+                        'standalone';
+
                     return {
                         id: containerInfo.Id.substring(0, 12),
                         name: containerInfo.Names[0].replace('/', ''),
                         image: containerInfo.Image,
                         status: containerInfo.State,
+                        stack: stack,
                         cpu: cpuPercent.toFixed(2) + '%',
                         memory: (memUsed / 1024 / 1024).toFixed(2) + ' MB',
                         isIdle: cpuPercent < 0.05,
@@ -312,8 +320,52 @@ export class MonitorService implements OnModuleInit {
     }
 
     async hibernateContainer(id: string) {
-        const container = this.docker.getContainer(id);
-        return container.stop();
+        // As requested: Idle only limits RAM. Hibernate now means "Set to minimum RAM (16MB)"
+        return this.updateResources(id, 16, 5);
+    }
+
+    async startStack(stackName: string) {
+        const containers = await this.docker.listContainers({ all: true });
+        for (const c of containers) {
+            const project = c.Labels['com.docker.compose.project'] || c.Labels['com.docker.stack.namespace'];
+            if (project === stackName) {
+                await this.docker.getContainer(c.Id).start().catch(() => { });
+            }
+        }
+        return { success: true };
+    }
+
+    async stopStack(stackName: string) {
+        const containers = await this.docker.listContainers({ all: true });
+        for (const c of containers) {
+            const project = c.Labels['com.docker.compose.project'] || c.Labels['com.docker.stack.namespace'];
+            if (project === stackName) {
+                await this.docker.getContainer(c.Id).stop().catch(() => { });
+            }
+        }
+        return { success: true };
+    }
+
+    async restartStack(stackName: string) {
+        const containers = await this.docker.listContainers({ all: true });
+        for (const c of containers) {
+            const project = c.Labels['com.docker.compose.project'] || c.Labels['com.docker.stack.namespace'];
+            if (project === stackName) {
+                await this.docker.getContainer(c.Id).restart().catch(() => { });
+            }
+        }
+        return { success: true };
+    }
+
+    async hibernateStack(stackName: string) {
+        const containers = await this.docker.listContainers({ all: true });
+        for (const c of containers) {
+            const project = c.Labels['com.docker.compose.project'] || c.Labels['com.docker.stack.namespace'];
+            if (project === stackName) {
+                await this.hibernateContainer(c.Id).catch(() => { });
+            }
+        }
+        return { success: true };
     }
 
     async stopAllIdle() {
@@ -321,11 +373,12 @@ export class MonitorService implements OnModuleInit {
         let count = 0;
         for (const c of containers) {
             if (c.isIdle && c.status === 'running') {
+                // Apply strict RAM limits instead of stopping
                 await this.hibernateContainer(c.id);
                 count++;
             }
         }
-        return { success: true, count };
+        return { success: true, count, message: 'Servidores IDLE optimizados a RAM mínima.' };
     }
 
     async getContainerLogs(id: string) {

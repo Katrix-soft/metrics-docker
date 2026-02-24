@@ -45,6 +45,26 @@ export class MonitorController {
         return this.monitorService.stopAllIdle();
     }
 
+    @Post('docker/stack/start')
+    async startStack(@Body('name') name: string) {
+        return this.monitorService.startStack(name);
+    }
+
+    @Post('docker/stack/stop')
+    async stopStack(@Body('name') name: string) {
+        return this.monitorService.stopStack(name);
+    }
+
+    @Post('docker/stack/restart')
+    async restartStack(@Body('name') name: string) {
+        return this.monitorService.restartStack(name);
+    }
+
+    @Post('docker/stack/hibernate')
+    async hibernateStack(@Body('name') name: string) {
+        return this.monitorService.hibernateStack(name);
+    }
+
     @Post('docker/update/:id')
     async updateResources(
         @Param('id') id: string,

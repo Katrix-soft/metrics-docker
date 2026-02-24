@@ -578,3 +578,52 @@ h3 {
     transform: translateY(0);
   }
 }
+
+/* Stack Group Styles */
+.stack-header td {
+  background: rgba(88, 166, 255, 0.05);
+  border-left: 4px solid var(--accent-color);
+  padding: 1.2rem 1rem !important;
+}
+
+.stack-action-btn {
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid var(--border-color);
+  color: var(--secondary-text);
+  padding: 5px 12px;
+  border-radius: 6px;
+  font-size: 0.7rem;
+  font-weight: 800;
+  cursor: pointer;
+  transition: all 0.2s;
+  letter-spacing: 0.05rem;
+}
+
+.stack-action-btn:hover {
+  color: white;
+  transform: translateY(-1px);
+}
+
+.stack-action-btn.start:hover {
+  background: var(--success);
+  border-color: var(--success);
+}
+
+.stack-action-btn.stop:hover {
+  background: var(--danger);
+  border-color: var(--danger);
+}
+
+.stack-action-btn.restart:hover {
+  background: var(--accent-color);
+  border-color: var(--accent-color);
+}
+
+.stack-action-btn.hibernate:hover {
+  background: #6f42c1;
+  border-color: #6f42c1;
+}
+
+.docker-table tbody {
+  border-top: 2px solid transparent;
+}

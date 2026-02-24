@@ -149,7 +149,7 @@
             </button>
             <button class="pause-btn" (click)="stopAllIdle()"
                 style="background: #3c1e70; border: 1px solid #6f42c1; box-shadow: 0 0 10px rgba(111, 66, 193, 0.3);">
-                💤 HIBERNAR IDLE
+                💤 OPTIMIZAR IDLE
             </button>
             <button class="pause-btn" (click)="togglePause()" [class.paused]="paused">
                 {{ paused ? 'RESUME' : 'PAUSE' }}
@@ -243,7 +243,48 @@
                     </tr>
                 </thead>
                 <tbody>
-                    <tr *ngFor="let container of filteredDocker">
+                    <tr *ngIf="docker.length === 0">
+                        <td colspan="7" style="text-align: center; padding: 2rem; color: var(--secondary-text)">
+                            No containers found or Docker Socket missing.
+                        </td>
+                    </tr>
+                </tbody>
+                <tbody *ngFor="let stack of stackNames">
+                    <!-- Stack Header Row -->
+                    <tr class="stack-header" *ngIf="stack !== 'standalone'">
+                        <td colspan="7">
+                            <div
+                                style="display: flex; align-items: center; justify-content: space-between; padding: 0.5rem 0;">
+                                <div style="display: flex; align-items: center; gap: 0.8rem;">
+                                    <svg width="20" height="20" fill="var(--accent-color)" viewBox="0 0 16 16">
+                                        <path
+                                            d="M1 2.5A1.5 1.5 0 0 1 2.5 1h3A1.5 1.5 0 0 1 7 2.5v3A1.5 1.5 0 0 1 5.5 7h-3A1.5 1.5 0 0 1 1 5.5v-3zM2.5 2a.5.5 0 0 0-.5.5v3a.5.5 0 0 0 .5.5h3a.5.5 0 0 0 .5-.5v-3a.5.5 0 0 0-.5-.5h-3zm6.5.5A1.5 1.5 0 0 1 10.5 1h3A1.5 1.5 0 0 1 15 2.5v3a1.5 1.5 0 0 1-1.5 1.5h-3A1.5 1.5 0 0 1 9 5.5v-3zm1.5-.5a.5.5 0 0 0-.5.5v3a.5.5 0 0 0 .5.5h3a.5.5 0 0 0 .5-.5v-3a.5.5 0 0 0-.5-.5h-3zM1 10.5A1.5 1.5 0 0 1 2.5 9h3A1.5 1.5 0 0 1 7 10.5v3A1.5 1.5 0 0 1 5.5 15h-3A1.5 1.5 0 0 1 1 13.5v-3zm1.5-.5a.5.5 0 0 0-.5.5v3a.5.5 0 0 0 .5.5h3a.5.5 0 0 0 .5-.5v-3a.5.5 0 0 0-.5-.5h-3zm6.5.5A1.5 1.5 0 0 1 10.5 9h3a1.5 1.5 0 0 1 1.5 1.5v3a1.5 1.5 0 0 1-1.5 1.5h-3A1.5 1.5 0 0 1 9 13.5v-3zm1.5-.5a.5.5 0 0 0-.5.5v3a.5.5 0 0 0 .5.5h3a.5.5 0 0 0 .5-.5v-3a.5.5 0 0 0-.5-.5h-3z" />
+                                    </svg>
+                                    <span
+                                        style="font-weight: 800; font-size: 1.1rem; letter-spacing: 0.1rem; color: #fff;">STACK:
+                                        {{ stack.toUpperCase() }}</span>
+                                </div>
+                                <div style="display: flex; gap: 0.5rem;">
+                                    <button class="stack-action-btn start" (click)="startStack(stack)">LEVANTAR
+                                        TODO</button>
+                                    <button class="stack-action-btn stop" (click)="stopStack(stack)">BAJAR</button>
+                                    <button class="stack-action-btn restart"
+                                        (click)="restartStack(stack)">REINICIAR</button>
+                                    <button class="stack-action-btn hibernate"
+                                        (click)="hibernateStack(stack)">OPTIMIZAR</button>
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+                    <!-- Standalone Header (Optional, for better grouping) -->
+                    <tr class="stack-header" *ngIf="stack === 'standalone'" style="border-left-color: #8b949e;">
+                        <td colspan="7">
+                            <span
+                                style="font-weight: 800; font-size: 0.9rem; letter-spacing: 0.1rem; color: var(--secondary-text);">STANDALONE
+                                CONTAINERS</span>
+                        </td>
+                    </tr>
+                    <tr *ngFor="let container of groupedDocker[stack]">
                         <td>
                             <div style="font-weight: 600;">{{ container.name }}</div>
                             <div style="font-size: 0.7rem; color: var(--accent-color)">{{ container.image }}</div>
@@ -289,7 +330,7 @@
                                 </button>
                                 <button *ngIf="container.status === 'running'"
                                     (click)="hibernateContainer(container.id)" class="action-btn stop-btn"
-                                    title="Hibernate / Sleep" style="background: #6f42c1;">
+                                    title="Optimize RAM (Limit 16MB)" style="background: #6f42c1;">
                                     <svg width="14" height="14" fill="currentColor" viewBox="0 0 16 16">
                                         <path
                                             d="M6 .278a.768.768 0 0 1 .08.858 7.208 7.208 0 0 0-.878 3.46c0 4.021 3.278 7.277 7.318 7.277.527 0 1.04-.055 1.533-.16a.787.787 0 0 1 .81.316.733.733 0 0 1-.031.893A8.349 8.349 0 0 1 8.344 16C3.734 16 0 12.286 0 7.71 0 4.266 2.114 1.312 5.124.06A.752.752 0 0 1 6 .278z" />
@@ -320,11 +361,6 @@
                                     </svg>
                                 </button>
                             </div>
-                        </td>
-                    </tr>
-                    <tr *ngIf="docker.length === 0">
-                        <td colspan="7" style="text-align: center; padding: 2rem; color: var(--secondary-text)">
-                            No containers found or Docker Socket missing.
                         </td>
                     </tr>
                 </tbody>

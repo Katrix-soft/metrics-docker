@@ -376,8 +376,45 @@ export class AppComponent implements OnInit, OnDestroy, AfterViewInit {
     }
 
     hibernateContainer(id: string) {
+        this.statusMessage = '⏳ Optimizando RAM de contenedor...';
         this.http.post(`/api/docker/hibernate/${id}`, {}).subscribe(() => {
-            this.statusMessage = '✅ Contenedor Hibernado';
+            this.statusMessage = '✅ RAM Minimizada (16MB)';
+            this.clearStatus();
+            this.fetchData();
+        });
+    }
+
+    startStack(name: string) {
+        this.statusMessage = `⏳ Iniciando Stack ${name}...`;
+        this.http.post('/api/docker/stack/start', { name }).subscribe(() => {
+            this.statusMessage = `✅ Stack ${name} iniciado`;
+            this.clearStatus();
+            this.fetchData();
+        });
+    }
+
+    stopStack(name: string) {
+        this.statusMessage = `⏳ Deteniendo Stack ${name}...`;
+        this.http.post('/api/docker/stack/stop', { name }).subscribe(() => {
+            this.statusMessage = `✅ Stack ${name} detenido`;
+            this.clearStatus();
+            this.fetchData();
+        });
+    }
+
+    restartStack(name: string) {
+        this.statusMessage = `⏳ Reiniciando Stack ${name}...`;
+        this.http.post('/api/docker/stack/restart', { name }).subscribe(() => {
+            this.statusMessage = `✅ Stack ${name} reiniciado`;
+            this.clearStatus();
+            this.fetchData();
+        });
+    }
+
+    hibernateStack(name: string) {
+        this.statusMessage = `⏳ Optimizando RAM de Stack ${name}...`;
+        this.http.post('/api/docker/stack/hibernate', { name }).subscribe(() => {
+            this.statusMessage = `✅ Stack ${name} optimizado`;
             this.clearStatus();
             this.fetchData();
         });
@@ -488,42 +525,6 @@ export class AppComponent implements OnInit, OnDestroy, AfterViewInit {
         this.memChart.update();
     }
 
-    restartContainer(id: string) {
-        this.statusMessage = `Restarting container ${id}...`;
-        this.http.post(`/api/docker/restart/${id}`, {}).subscribe({
-            next: () => {
-                this.statusMessage = 'Restart successful';
-                this.fetchData();
-                this.clearStatus();
-            },
-            error: () => this.statusMessage = 'Restart failed'
-        });
-    }
-
-    stopContainer(id: string) {
-        this.statusMessage = `Stopping container ${id}...`;
-        this.http.post(`/api/docker/stop/${id}`, {}).subscribe({
-            next: () => {
-                this.statusMessage = 'Stop successful';
-                this.fetchData();
-                this.clearStatus();
-            },
-            error: () => this.statusMessage = 'Stop failed'
-        });
-    }
-
-    startContainer(id: string) {
-        this.statusMessage = `Starting container ${id}...`;
-        this.http.post(`/api/docker/start/${id}`, {}).subscribe({
-            next: () => {
-                this.statusMessage = 'Start successful';
-                this.fetchData();
-                this.clearStatus();
-            },
-            error: () => this.statusMessage = 'Start failed'
-        });
-    }
-
     openEditModal(container: any) {
         this.selectedContainer = container;
         // Parse current memory (e.g. "128.50 MB" -> 128)
@@ -631,8 +632,30 @@ export class AppComponent implements OnInit, OnDestroy, AfterViewInit {
         if (!this.searchTerm) return this.docker;
         return this.docker.filter(c =>
             c.name.toLowerCase().includes(this.searchTerm.toLowerCase()) ||
-            c.id.toLowerCase().includes(this.searchTerm.toLowerCase())
+            c.id.toLowerCase().includes(this.searchTerm.toLowerCase()) ||
+            (c.stack && c.stack.toLowerCase().includes(this.searchTerm.toLowerCase()))
         );
+    }
+
+    get groupedDocker() {
+        const filtered = this.filteredDocker;
+        const groups: { [key: string]: any[] } = {};
+
+        // Sort to keep standalone at the bottom or top
+        filtered.forEach(c => {
+            const stack = c.stack || 'standalone';
+            if (!groups[stack]) groups[stack] = [];
+            groups[stack].push(c);
+        });
+        return groups;
+    }
+
+    get stackNames() {
+        return Object.keys(this.groupedDocker).sort((a, b) => {
+            if (a === 'standalone') return 1;
+            if (b === 'standalone') return -1;
+            return a.localeCompare(b);
+        });
     }
 
     openLink(url: string) {
