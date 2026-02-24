@@ -1,65 +1,65 @@
 # 🚀 NexPulse Monitor
 
-**NexPulse** is an ultra-lightweight, high-performance infrastructure monitoring suite designed specifically for low-resource environments (VPS with as little as 1vCPU and 2GB RAM). It provides real-time visibility and autonomous resource optimization using a modern, premium stack.
+**NexPulse** es una suite de monitoreo de infraestructura ultra-ligera y de alto rendimiento, diseñada específicamente para entornos de recursos limitados (VPS con tan solo 1vCPU y 2GB de RAM). Proporciona visibilidad en tiempo real y optimización autónoma de recursos utilizando un stack tecnológico moderno y una interfaz premium.
 
-![Status](https://img.shields.io/badge/Status-Production--Ready-success?style=for-the-badge)
-![Tech](https://img.shields.io/badge/Built%20with-NestJS%20%26%20Angular-blue?style=for-the-badge)
-![Optimization](https://img.shields.io/badge/RAM%20Optimization-Autonomous-blueviolet?style=for-the-badge)
+![Estado](https://img.shields.io/badge/Estado-Listo%20para%20Producción-success?style=for-the-badge)
+![Tecnología](https://img.shields.io/badge/Construido%20con-NestJS%20%26%20Angular-blue?style=for-the-badge)
+![Optimización](https://img.shields.io/badge/Optimización%20RAM-Autónoma-blueviolet?style=for-the-badge)
 
-## ✨ Key Features
+## ✨ Características Principales
 
-- **📊 Real-time Dashboard**: Beautiful dark-mode interface with smooth Chart.js visualizations for CPU and RAM.
-- **🐳 Docker Management**: Start, stop, restart, and hibernate containers or entire Docker Compose stacks directly from the web.
-- **🧠 Autonomous RAM Balancing**: "Magic Optimize" engine that identifies idle services and forces them into a minimum RAM state (16MB) using strict kernel limits.
-- **📲 WhatsApp Integration**: Fully functional command-line bot via CallMeBot. Check status, list stacks, and trigger optimizations directly from WhatsApp.
-- **🔐 Enterprise Security**:
-  - **Biometric Login**: Secure access using Fingerprint/FaceID via WebAuthn.
-  - **2FA (Two-Factor Authentication)**: Google Authenticator support for critical actions.
-  - **Nginx Protection**: Built-in Basic Auth gateway.
-- **⚡ Resource Constraints**: Hard-capped to consume less than 120MB of RAM itself, ensuring no performance impact on your production services.
+- **📊 Dashboard en Tiempo Real**: Interfaz oscura premium con visualizaciones fluidas en Chart.js para CPU y RAM.
+- **🐳 Gestión de Docker**: Inicia, detiene, reinicia e hiberna contenedores o stacks completos de Docker Compose directamente desde la web.
+- **🧠 Balanceo de RAM Autónomo**: Motor "Magic Optimize" que identifica servicios inactivos y los fuerza a un estado de RAM mínima (16MB) utilizando límites estrictos del kernel.
+- **📲 Integración con WhatsApp**: Bot de comandos totalmente funcional a través de CallMeBot. Revisa el estado, lista stacks y activa optimizaciones directamente desde tu WhatsApp.
+- **🔐 Seguridad Empresarial**:
+  - **Login Biométrico**: Acceso seguro mediante Huella Digital o FaceID a través de WebAuthn.
+  - **2FA (Autenticación de Dos Factores)**: Soporte para Google Authenticator en acciones críticas.
+  - **Protección Nginx**: Puerta de enlace con Basic Auth integrada.
+- **⚡ Consumo Eficiente**: Diseñado para consumir menos de 120MB de RAM, garantizando que el monitor no afecte el rendimiento de tus servicios de producción.
 
-## 🛠️ Technology Stack
+## 🛠️ Stack Tecnológico
 
-| Layer | Technology |
+| Capa | Tecnología |
 | :--- | :--- |
 | **Backend** | [NestJS](https://nestjs.com/) (Node.js) |
 | **Frontend** | [Angular 17](https://angular.io/) (Standalone Components) |
-| **Visuals** | [Chart.js](https://www.chartjs.org/) |
+| **Visuales** | [Chart.js](https://www.chartjs.org/) |
 | **Docker API** | [Dockerode](https://github.com/apocas/dockerode) |
-| **System Info** | [Systeminformation](https://systeminformation.io/) |
-| **Mobile Bot** | CallMeBot Webhook Integration |
+| **Información de Sistema** | [Systeminformation](https://systeminformation.io/) |
+| **Bot Móvil** | Integración CallMeBot Webhook |
 
-## 🚀 Quick Start (Docker Compose)
+## 🚀 Inicio Rápido (Docker Compose)
 
-The easiest way to deploy **NexPulse** is using the pre-configured `docker-compose.yml`.
+La forma más sencilla de desplegar **NexPulse** es utilizando el archivo `docker-compose.yml` pre-configurado.
 
-### 1. Prerequisites
-- Docker & Docker Compose installed.
-- Access to `/var/run/docker.sock` (automatic inside the container).
+### 1. Requisitos
+- Docker y Docker Compose instalados.
+- Acceso al socket de Docker en `/var/run/docker.sock`.
 
-### 2. Configuration
-The system uses the following default credentials in `docker-compose.yml`:
-- **User**: `admin`
-- **Password**: `katrix2026` (It is recommended to change these via environment variables).
+### 2. Configuración
+El sistema utiliza las siguientes credenciales por defecto en el `docker-compose.yml`:
+- **Usuario**: `admin`
+- **Contraseña**: `katrix2026` (Se recomienda cambiarlas mediante variables de entorno).
 
-### 3. Deploy
+### 3. Despliegue
 ```bash
 docker-compose up -d --build
 ```
-Access the dashboard at `http://YOUR_SERVER_IP:4205`.
+Accede al dashboard en `http://TU_IP_SERVIDOR:4205`.
 
-## 🤖 WhatsApp Control
-Simply connect your CallMeBot API and send `Hola` to your bot. You will receive an interactive menu:
-1. **System Status**: Get current RAM/CPU/Disk metrics.
-2. **Active Stacks**: List your running Docker services.
-3. **Magic Optimize**: Trigger a deep system cleanup and RAM balancing.
-4. **Capacity Analysis**: Predictive info on how many more stacks your VPS can handle.
+## 🤖 Control por WhatsApp
+Simplemente conecta tu API de CallMeBot y envía un mensaje con la palabra `Hola` a tu bot. Recibirás un menú interactivo:
+1. **Estado del Sistema**: Métricas actuales de RAM/CPU/Disco.
+2. **Stacks Activos**: Lista de tus servicios Docker en ejecución.
+3. **Magic Optimize**: Activa una limpieza profunda del sistema y balanceo de RAM.
+4. **Análisis de Capacidad**: Información predictiva sobre cuántos stacks más puede soportar tu VPS.
 
-## 📈 Optimization Strategy
-NexPulse doesn't just monitor; it takes action. When a service is detected as **IDLE** (Low CPU for an extended period), the system:
-- Limits `Memory` and `MemorySwap` to **16MB/32MB**.
-- Reduces `MemoryReservation` to **6MB**.
-- Effectively forces the Linux kernel to reclaim unused pages, saving up to 80% RAM on idle services.
+## 📈 Estrategia de Optimización
+NexPulse no solo monitorea, toma acción. Cuando se detecta que un servicio está **IDLE** (Bajo uso de CPU por un periodo prolongado), el sistema:
+- Limita la `Memory` y `MemorySwap` a **16MB/32MB**.
+- Reduce la `MemoryReservation` a **6MB**.
+- Fuerza al kernel de Linux a reclamar las páginas de memoria no utilizadas, ahorrando hasta un 80% de RAM en servicios inactivos.
 
-## 📜 License
-Developed with ❤️ by **NexPulse Ops**. Part of the Katrix soft ecosystem.
+---
+Desarrollado con ❤️ por **Katrix**. Pulsando el corazón de tu infraestructura.
