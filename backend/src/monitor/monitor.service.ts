@@ -1,7 +1,7 @@
 import { Injectable, OnModuleInit } from '@nestjs/common';
 import * as si from 'systeminformation';
-import * as Docker from 'dockerode';
-import { authenticator } from 'otplib';
+import Docker from 'dockerode';
+const { authenticator } = require('otplib');
 import * as qrcode from 'qrcode';
 import * as fs from 'fs';
 import * as path from 'path';
