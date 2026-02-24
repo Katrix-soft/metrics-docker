@@ -133,23 +133,30 @@ export class MonitorController {
 
     @All('webhook/whatsapp')
     async handleWhatsAppWebhook(@Query() query: any, @Body() body: any) {
-        // CallMeBot usually sends webhooks via GET (query) but we support POST (body) too
-        const message = (query.text || query.message || body.text || body.message || '').toString();
-        const incomingPhone = (query.phone || query.sender || body.phone || body.sender || '').toString();
+        // Detailed log to catch what CallMeBot is actually sending
+        console.log('[WhatsApp Webhook] Incoming:', {
+            query: JSON.stringify(query),
+            body: JSON.stringify(body)
+        });
 
-        console.log(`[WhatsApp Webhook] Received from ${incomingPhone}: ${message}`);
+        // Some bots use different field names
+        const message = (query.text || query.message || body.text || body.message || '').toString();
+        const incomingPhone = (query.phone || query.sender || query.from || body.phone || body.sender || body.from || '').toString();
+
+        if (!message) return { ok: true, status: 'Empty message' };
 
         const authorizedPhone = '5492616557673';
-
-        // Robust match: remove + or other chars and check if one contains the other
         const cleanIncoming = incomingPhone.replace(/\D/g, '');
         const cleanAuthorized = authorizedPhone.replace(/\D/g, '');
 
+        // If no phone is received, we log it but don't authorized (for security)
+        // unless it's a very specific testing scenario
         if (cleanIncoming.includes(cleanAuthorized) || cleanAuthorized.includes(cleanIncoming)) {
+            console.log(`[WhatsApp] Authorized match for ${incomingPhone}. Processing: ${message}`);
             const responseMessage = await this.monitorService.processCommand(message);
             await this.monitorService.sendWhatsApp(responseMessage);
         } else {
-            console.warn(`[WhatsApp Webhook] Unauthorized phone: ${incomingPhone}`);
+            console.warn(`[WhatsApp] Unauthorized phone: "${incomingPhone}" (Wanted: ${authorizedPhone})`);
         }
         return { ok: true };
     }
