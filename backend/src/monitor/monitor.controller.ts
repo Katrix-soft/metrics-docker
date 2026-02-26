@@ -104,8 +104,10 @@ export class MonitorController {
 
     @Post('login')
     async login(@Body() body: { password: string }) {
-        // Simple hardcoded password for Lite version
-        if (body.password === 'katrix2024') {
+        // Read password from environment variable AUTH_PASS (set in docker-compose.yml)
+        // Falls back to 'katrix2024' if not defined
+        const validPassword = process.env.AUTH_PASS || 'katrix2024';
+        if (body.password === validPassword) {
             return { success: true, token: 'katrix-secret-token' };
         }
         return { success: false, message: 'Invalid password' };

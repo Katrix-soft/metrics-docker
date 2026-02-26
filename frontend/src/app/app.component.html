@@ -1,81 +1,167 @@
 <div class="login-screen" *ngIf="!isLoggedIn">
-    <div class="login-card">
-        <div class="login-logo">NEXPULSE MONITOR</div>
-        <div class="login-subtitle">SECURE SYSTEM PULSE</div>
 
-        <!-- Case 1: NOT Linked (First time or new device) -->
-        <form (submit)="login()" *ngIf="!isBiometricLinked">
-            <div class="login-form-group">
-                <label class="login-label">ACCESS KEY</label>
-                <input type="password" [(ngModel)]="loginPassword" name="password" class="login-input"
-                    placeholder="••••••••" autocomplete="current-password" required>
-            </div>
+    <!-- Animated grid background -->
+    <div class="login-bg-grid"></div>
+    <!-- Glowing orbs -->
+    <div class="login-orb login-orb-1"></div>
+    <div class="login-orb login-orb-2"></div>
+    <div class="login-orb login-orb-3"></div>
 
-            <!-- 2FA Input (Only if enabled) -->
-            <div class="login-form-group" *ngIf="is2FAEnabled"
-                style="margin-top: 1rem; animation: slideUp 0.3s ease-out;">
-                <label class="login-label" style="color: var(--accent-color);">GOOGLE AUTH CODE (2FA)</label>
-                <input type="text" [(ngModel)]="login2FACode" name="otp" class="login-input" placeholder="000 000"
-                    maxlength="6" style="letter-spacing: 0.5rem; text-align: center; font-size: 1.2rem;">
-            </div>
+    <div class="login-layout">
 
-            <button type="submit" (click)="is2FAEnabled ? login2FA() : login()" class="login-btn"
-                style="background: var(--accent-color); color: #000; box-shadow: 0 4px 15px rgba(88, 166, 255, 0.4);">
-                {{ is2FAEnabled ? 'VERIFICAR Y ENTRAR' : 'ACCEDER CON CONTRASEÑA' }}
-            </button>
-
-            <div class="login-error" *ngIf="loginError" style="margin-top: 1.5rem;">
-                {{ loginError }}
-            </div>
-        </form>
-
-        <!-- Case 2: LINKED (Exclusive Biometric Access) -->
-        <div *ngIf="isBiometricLinked">
-            <div style="margin-bottom: 2rem;">
-                <div
-                    style="width: 80px; height: 80px; background: rgba(37, 211, 102, 0.1); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 1rem;">
-                    <svg width="40" height="40" fill="#25d366" viewBox="0 0 16 16">
-                        <path
-                            d="M4.828 4.41a.5.5 0 0 0-.723-.689 6 6 0 1 0 7.79 0 .5.5 0 1 0-.723.689 5 5 0 1 1-6.344 0z" />
-                        <path
-                            d="M11 6a.5.5 0 0 1 .458.691l-1 2.5a.5.5 0 1 1-.928-.382L10.231 7H8.5a.5.5 0 0 1 0-1h2.5zM5 6a.5.5 0 1 1-1 0 .5.5 0 0 1 1 0z" />
-                        <path d="M8 8a1 1 0 1 1 0-2 1 1 0 0 1 0 2z" />
+        <!-- Left branding panel (hidden on mobile) -->
+        <div class="login-branding">
+            <div class="login-brand-inner">
+                <div class="login-brand-logo">
+                    <svg width="52" height="52" viewBox="0 0 52 52" fill="none">
+                        <rect width="52" height="52" rx="14" fill="rgba(88,166,255,0.12)" />
+                        <path d="M14 26L22 14L30 26L22 38L14 26Z" fill="#58a6ff" opacity="0.8" />
+                        <path d="M24 26L32 14L40 26L32 38L24 26Z" fill="#58a6ff" opacity="0.4" />
                     </svg>
                 </div>
-                <h3 style="margin-bottom: 0.5rem; color: #fff;">Acceso Protegido</h3>
-                <p style="font-size: 0.85rem; color: var(--secondary-text);">Escanea tu huella para desbloquear el
-                    monitor.</p>
+                <h1 class="login-brand-name">KATRIX</h1>
+                <p class="login-brand-tagline">Infrastructure Monitoring</p>
+                <div class="login-brand-stats">
+                    <div class="login-stat-item">
+                        <span class="login-stat-dot green"></span>
+                        <span>Sistema operativo</span>
+                    </div>
+                    <div class="login-stat-item">
+                        <span class="login-stat-dot blue"></span>
+                        <span>Monitoreo en tiempo real</span>
+                    </div>
+                    <div class="login-stat-item">
+                        <span class="login-stat-dot purple"></span>
+                        <span>Control de contenedores</span>
+                    </div>
+                </div>
+                <div class="login-brand-footer">
+                    metricas.katrix.com.ar
+                </div>
             </div>
-
-            <div class="login-form-group" *ngIf="is2FAEnabled" style="margin-bottom: 1.5rem;">
-                <label class="login-label" style="color: var(--accent-color);">GOOGLE AUTH CODE (2FA)</label>
-                <input type="text" [(ngModel)]="login2FACode" name="otp" class="login-input" placeholder="000000"
-                    maxlength="6" style="text-align: center; font-size: 1.1rem; border-color: var(--accent-color);">
-            </div>
-
-            <button type="button" (click)="loginWithBiometrics()" class="login-btn biometric-btn"
-                style="height: 70px; display: flex; align-items: center; justify-content: center; gap: 1rem; border-radius: 20px;">
-                <span style="font-size: 1.2rem; font-weight: 900;">DESBLOQUEAR AHORA</span>
-            </button>
-
-            <div class="login-error" *ngIf="loginError" style="margin-top: 1.5rem;">
-                {{ loginError }}
-            </div>
-
-            <button (click)="isBiometricLinked = false"
-                style="background: none; border: none; color: var(--secondary-text); font-size: 0.75rem; margin-top: 2rem; cursor: pointer; text-decoration: underline; opacity: 0.5;">
-                Entrar con contraseña (emergencia)
-            </button>
         </div>
 
-        <div *ngIf="statusMessage"
-            style="margin-top: 1rem; color: var(--accent-color); font-size: 0.85rem; font-weight: 600;">
-            {{ statusMessage }}
+        <!-- Right login form panel -->
+        <div class="login-form-panel">
+            <div class="login-card">
+
+                <!-- Logo for mobile -->
+                <div class="login-mobile-logo">
+                    <svg width="36" height="36" viewBox="0 0 52 52" fill="none">
+                        <rect width="52" height="52" rx="14" fill="rgba(88,166,255,0.15)" />
+                        <path d="M14 26L22 14L30 26L22 38L14 26Z" fill="#58a6ff" opacity="0.9" />
+                        <path d="M24 26L32 14L40 26L32 38L24 26Z" fill="#58a6ff" opacity="0.5" />
+                    </svg>
+                    <span>KATRIX</span>
+                </div>
+
+                <div class="login-card-header">
+                    <h2 class="login-title">Bienvenido</h2>
+                    <p class="login-desc">Ingresá tu clave de acceso para continuar.</p>
+                </div>
+
+                <!-- Case 1: Password login -->
+                <form (submit)="login()" *ngIf="!isBiometricLinked">
+
+                    <div class="login-form-group">
+                        <label class="login-label">
+                            <svg width="13" height="13" fill="currentColor" viewBox="0 0 16 16"
+                                style="margin-right:5px;opacity:0.6">
+                                <path
+                                    d="M8 1a2 2 0 0 1 2 2v4H6V3a2 2 0 0 1 2-2zm3 6V3a3 3 0 0 0-6 0v4a2 2 0 0 0-2 2v5a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2z" />
+                            </svg>
+                            CLAVE DE ACCESO
+                        </label>
+                        <div class="login-input-wrapper">
+                            <input type="password" [(ngModel)]="loginPassword" name="password" class="login-input"
+                                placeholder="Ingresá tu contraseña" autocomplete="current-password" required>
+                            <div class="login-input-glow"></div>
+                        </div>
+                    </div>
+
+                    <!-- 2FA Input -->
+                    <div class="login-form-group" *ngIf="is2FAEnabled" style="animation: fadeIn 0.4s ease-out;">
+                        <label class="login-label" style="color: #a78bfa;">
+                            <svg width="13" height="13" fill="currentColor" viewBox="0 0 16 16"
+                                style="margin-right:5px;opacity:0.7">
+                                <path
+                                    d="M5.338 1.59a61.44 61.44 0 0 0-2.837.856.481.481 0 0 0-.328.39c-.554 4.157.726 7.19 2.253 9.188a10.725 10.725 0 0 0 2.287 2.233c.346.244.652.42.893.533.12.057.218.095.293.118a.55.55 0 0 0 .101.025.615.615 0 0 0 .1-.025c.076-.023.174-.061.294-.118.24-.113.547-.29.893-.533a10.726 10.726 0 0 0 2.287-2.233c1.527-1.997 2.807-5.031 2.253-9.188a.48.48 0 0 0-.328-.39c-.651-.213-1.75-.56-2.837-.855C9.552 1.29 8.531 1.067 8 1.067c-.53 0-1.552.223-2.662.524z" />
+                            </svg>
+                            CÓDIGO GOOGLE 2FA
+                        </label>
+                        <input type="text" [(ngModel)]="login2FACode" name="otp" class="login-input"
+                            placeholder="000 000" maxlength="6"
+                            style="letter-spacing: 0.6rem; text-align: center; font-size: 1.3rem; font-weight: 700; border-color: #a78bfa;">
+                    </div>
+
+                    <button type="submit" (click)="is2FAEnabled ? login2FA() : login()" class="login-btn-primary">
+                        <span>{{ is2FAEnabled ? 'VERIFICAR Y ENTRAR' : 'ACCEDER' }}</span>
+                        <svg width="18" height="18" fill="currentColor" viewBox="0 0 16 16">
+                            <path fill-rule="evenodd"
+                                d="M1 8a.5.5 0 0 1 .5-.5h11.793l-3.147-3.146a.5.5 0 0 1 .708-.708l4 4a.5.5 0 0 1 0 .708l-4 4a.5.5 0 0 1-.708-.708L13.293 8.5H1.5A.5.5 0 0 1 1 8z" />
+                        </svg>
+                    </button>
+
+                    <div class="login-error-msg" *ngIf="loginError">
+                        <svg width="14" height="14" fill="currentColor" viewBox="0 0 16 16">
+                            <path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14zm0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16z" />
+                            <path
+                                d="M7.002 11a1 1 0 1 1 2 0 1 1 0 0 1-2 0zM7.1 4.995a.905.905 0 1 1 1.8 0l-.35 3.507a.552.552 0 0 1-1.1 0L7.1 4.995z" />
+                        </svg>
+                        {{ loginError }}
+                    </div>
+                </form>
+
+                <!-- Case 2: Biometric access -->
+                <div *ngIf="isBiometricLinked">
+                    <div class="login-bio-icon-wrap">
+                        <div class="login-bio-pulse"></div>
+                        <svg width="42" height="42" fill="#25d366" viewBox="0 0 16 16">
+                            <path
+                                d="M4.828 4.41a.5.5 0 0 0-.723-.689 6 6 0 1 0 7.79 0 .5.5 0 1 0-.723.689 5 5 0 1 1-6.344 0z" />
+                            <path
+                                d="M11 6a.5.5 0 0 1 .458.691l-1 2.5a.5.5 0 1 1-.928-.382L10.231 7H8.5a.5.5 0 0 1 0-1h2.5zM5 6a.5.5 0 1 1-1 0 .5.5 0 0 1 1 0z" />
+                            <path d="M8 8a1 1 0 1 1 0-2 1 1 0 0 1 0 2z" />
+                        </svg>
+                    </div>
+                    <h3 style="text-align:center; margin-bottom: 0.4rem; font-size:1.2rem;">Acceso Protegido</h3>
+                    <p
+                        style="text-align:center; font-size: 0.85rem; color: var(--secondary-text); margin-bottom: 2rem;">
+                        Usa tu huella o face ID para desbloquear.</p>
+
+                    <div class="login-form-group" *ngIf="is2FAEnabled">
+                        <label class="login-label" style="color: #a78bfa;">CÓDIGO 2FA</label>
+                        <input type="text" [(ngModel)]="login2FACode" name="otp" class="login-input"
+                            placeholder="000000" maxlength="6"
+                            style="text-align: center; font-size: 1.1rem; border-color: #a78bfa;">
+                    </div>
+
+                    <button type="button" (click)="loginWithBiometrics()" class="login-btn-biometric">
+                        <svg width="22" height="22" fill="currentColor" viewBox="0 0 16 16">
+                            <path
+                                d="M8 1a4 4 0 0 0-4 4v2.5a.5.5 0 0 0 1 0V5a3 3 0 0 1 6 0v2.5a.5.5 0 0 0 1 0V5a4 4 0 0 0-4-4z" />
+                            <path d="M8 7.5a1.5 1.5 0 0 0-1.5 1.5v2a1.5 1.5 0 0 0 3 0V9A1.5 1.5 0 0 0 8 7.5z" />
+                        </svg>
+                        DESBLOQUEAR AHORA
+                    </button>
+
+                    <div class="login-error-msg" *ngIf="loginError">{{ loginError }}</div>
+
+                    <button (click)="isBiometricLinked = false" class="login-link-btn">
+                        Entrar con contraseña
+                    </button>
+                </div>
+
+                <div class="login-status-msg" *ngIf="statusMessage">{{ statusMessage }}</div>
+
+                <div class="login-card-footer">
+                    <span>© 2025 Katrix Ops</span>
+                    <span class="login-footer-dot">•</span>
+                    <span>v1.0 Lite</span>
+                </div>
+            </div>
         </div>
 
-        <div style="margin-top: 2rem; font-size: 0.75rem; color: var(--secondary-text); opacity: 0.5;">
-            &copy; 2024 NEXPULSE OPS | ADVANCED INFRASTRUCTURE MONITORING
-        </div>
     </div>
 </div>
 
