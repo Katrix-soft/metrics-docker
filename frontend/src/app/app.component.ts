@@ -240,12 +240,13 @@ export class AppComponent implements OnInit, OnDestroy, AfterViewInit {
             const options: CredentialCreationOptions = {
                 publicKey: {
                     challenge,
-                    rp: { name: 'Katrix Monitor', id: window.location.hostname },
+                    rp: { name: 'NexPulse by Katrix', id: window.location.hostname },
                     user: {
-                        id: Uint8Array.from('katrix-admin-v1', c => c.charCodeAt(0)),
-                        name: 'admin@katrix',
-                        displayName: 'Admin Katrix'
+                        id: Uint8Array.from('nexpulse-katrix-v1', c => c.charCodeAt(0)),
+                        name: 'admin@nexpulse',
+                        displayName: 'Admin NexPulse'
                     },
+
                     pubKeyCredParams: [
                         { alg: -7, type: 'public-key' },   // ES256 (preferred)
                         { alg: -257, type: 'public-key' }  // RS256 (fallback)
@@ -648,7 +649,8 @@ export class AppComponent implements OnInit, OnDestroy, AfterViewInit {
     testWhatsApp() {
         this.statusMessage = 'Sending WhatsApp...';
         this.http.post('/api/notify/whatsapp', {
-            message: '🚀 Katrix Monitor: Test successful to 5492616557673!'
+            message: '🚀 NexPulse by Katrix: Test successful to 5492616557673!'
+
         }).subscribe({
             next: (ok) => {
                 this.statusMessage = ok ? 'WhatsApp Sent!' : 'Failed (Check CallMeBot status)';
@@ -667,7 +669,8 @@ export class AppComponent implements OnInit, OnDestroy, AfterViewInit {
         this.http.post('/api/notify/telegram', {
             botToken: this.tgToken,
             chatId: this.tgChatId,
-            message: '🚀 Katrix Monitor: Notification system active on Telegram!'
+            message: '🚀 NexPulse by Katrix: Notification system active on Telegram!'
+
         }).subscribe({
             next: (ok) => {
                 this.statusMessage = ok ? 'Telegram Sent!' : 'Failed to send';
@@ -680,7 +683,8 @@ export class AppComponent implements OnInit, OnDestroy, AfterViewInit {
     testWhin() {
         this.statusMessage = 'Sending Whin (WhatsApp)...';
         this.http.post('/api/notify/whin', {
-            message: '🚀 Katrix Monitor: WhatsApp RapidAPI active!'
+            message: '🚀 NexPulse by Katrix: WhatsApp RapidAPI active!'
+
         }).subscribe({
             next: (ok) => {
                 this.statusMessage = ok ? 'Whin Sent!' : 'Failed (Check Group Setup)';

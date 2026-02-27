@@ -663,6 +663,14 @@ h3 {
   letter-spacing: -0.02em;
 }
 
+.nexpulse-brand small {
+  font-size: 0.55em;
+  font-weight: 400;
+  opacity: 0.55;
+  letter-spacing: 0.02em;
+  color: var(--secondary-text);
+}
+
 .login-card-header {
   margin-bottom: 2rem;
 }

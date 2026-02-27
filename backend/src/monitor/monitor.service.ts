@@ -563,7 +563,7 @@ export class MonitorService implements OnModuleInit {
         const cmd = input.trim().toLowerCase();
 
         if (cmd === 'hola' || cmd === 'menu' || cmd === '0') {
-            return `👋 ¡Hola! Soy *NexPulse Monitor*
+            return `👋 ¡Hola! Soy *NexPulse Monitor* by Katrix
 ¿En qué puedo ayudarte hoy?
 
 1️⃣ *Estado del Sistema* (RAM/CPU)
@@ -572,6 +572,7 @@ export class MonitorService implements OnModuleInit {
 4️⃣ *Capacidad* (Stacks libres)
 
 Escribí el número de la opción o *Hola* para volver a ver este menú.`;
+
         }
 
         if (cmd === '1') {
@@ -625,7 +626,8 @@ Memoria segura disponible: ${Math.round(safeMB)} MB.`;
 
     async setup2FA() {
         const secret = authenticator.generateSecret();
-        const otpauth = authenticator.keyuri('admin', 'NexPulse', secret);
+        const otpauth = authenticator.keyuri('admin', 'NexPulse by Katrix', secret);
+
         const qrCode = await qrcode.toDataURL(otpauth);
 
         // Save pending secret (don't commit yet until verified)
