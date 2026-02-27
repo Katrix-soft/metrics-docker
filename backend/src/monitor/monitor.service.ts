@@ -16,6 +16,11 @@ export class MonitorService implements OnModuleInit {
     private diskAlertSent = false;
     private idleTracker: Map<string, number> = new Map();
 
+    // ── Cache layer (reduces CPU/RAM load significantly) ──────────────────
+    private sysStatsCache: { data: any; ts: number } | null = null;
+    private dockerStatsCache: { data: any; ts: number } | null = null;
+    private readonly CACHE_TTL_MS = 8000; // 8 seconds
+
     private isProtected(name: string): boolean {
         const n = name.toLowerCase().replace('/', '');
         return (
@@ -38,8 +43,15 @@ export class MonitorService implements OnModuleInit {
     }
 
     onModuleInit() {
-        // Start automatic monitoring loop every 60 seconds
-        setInterval(() => this.checkAutomations(), 60000);
+        // Start automatic monitoring loop every 90 seconds (was 60)
+        setInterval(() => this.checkAutomations(), 90000);
+
+        // Periodically clean up idleTracker to prevent memory leak
+        setInterval(() => {
+            if (this.idleTracker.size > 200) {
+                this.idleTracker.clear();
+            }
+        }, 300000); // every 5 min
     }
 
     async checkAutomations() {
@@ -155,7 +167,13 @@ export class MonitorService implements OnModuleInit {
     }
 
     async getSystemStats() {
-        const [cpu, mem, fs, net, time, os, cpuInfo] = await Promise.all([
+        // Return cached result if fresh enough
+        const now = Date.now();
+        if (this.sysStatsCache && (now - this.sysStatsCache.ts) < this.CACHE_TTL_MS) {
+            return this.sysStatsCache.data;
+        }
+
+        const [cpu, mem, fsData, net, time, os, cpuInfo] = await Promise.all([
             si.currentLoad(),
             si.mem(),
             si.fsSize(),
@@ -165,7 +183,7 @@ export class MonitorService implements OnModuleInit {
             si.cpu(),
         ]);
 
-        return {
+        const result = {
             hostname: os.hostname,
             os: `${os.distro} ${os.release}`,
             kernel: os.kernel,
@@ -181,9 +199,9 @@ export class MonitorService implements OnModuleInit {
                 free: (mem.free / 1024 / 1024 / 1024).toFixed(2) + ' GB',
                 percent: ((mem.used / mem.total) * 100).toFixed(2),
             },
-            disk: fs
+            disk: fsData
                 .filter(d => !d.fs.includes('loop') && !d.fs.includes('tmpfs'))
-                .slice(0, 1) // Only show the main disk as requested
+                .slice(0, 1)
                 .map(d => ({
                     fs: d.fs,
                     size: (d.size / 1024 / 1024 / 1024).toFixed(2) + ' GB',
@@ -197,6 +215,9 @@ export class MonitorService implements OnModuleInit {
             })),
             uptime: this.formatUptime(time.uptime),
         };
+
+        this.sysStatsCache = { data: result, ts: now };
+        return result;
     }
 
     async optimizeSystem() {
@@ -272,22 +293,45 @@ export class MonitorService implements OnModuleInit {
         }
     }
 
+    // Helper: run async tasks with limited concurrency (avoids memory spikes)
+    private async runConcurrent<T>(tasks: (() => Promise<T>)[], limit = 4): Promise<T[]> {
+        const results: T[] = [];
+        let idx = 0;
+        async function worker() {
+            while (idx < tasks.length) {
+                const i = idx++;
+                results[i] = await tasks[i]();
+            }
+        }
+        const workers = Array.from({ length: Math.min(limit, tasks.length) }, worker);
+        await Promise.all(workers);
+        return results;
+    }
+
     async getDockerStats() {
+        // Return cached result if fresh enough
+        const now = Date.now();
+        if (this.dockerStatsCache && (now - this.dockerStatsCache.ts) < this.CACHE_TTL_MS) {
+            return this.dockerStatsCache.data;
+        }
+
         try {
             const containers = await this.docker.listContainers({ all: true });
-            const stats = await Promise.all(
-                containers.map(async (containerInfo) => {
-                    const container = this.docker.getContainer(containerInfo.Id);
-                    const containerStats = await container.stats({ stream: false });
 
-                    // Basic CPU calculation from docker stats
+            // Use limited concurrency (4 at a time) instead of Promise.all for ALL containers
+            const tasks = containers.map(containerInfo => async () => {
+                try {
+                    const container = this.docker.getContainer(containerInfo.Id);
+                    const containerStats = await Promise.race([
+                        container.stats({ stream: false }),
+                        new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), 3000))
+                    ]) as any;
+
                     const cpuDelta = containerStats.cpu_stats.cpu_usage.total_usage - containerStats.precpu_stats.cpu_usage.total_usage;
                     const systemDelta = containerStats.cpu_stats.system_cpu_usage - containerStats.precpu_stats.system_cpu_usage;
                     const cpuPercent = systemDelta > 0 ? (cpuDelta / systemDelta) * containerStats.cpu_stats.online_cpus * 100 : 0;
 
-                    const memUsed = containerStats.memory_stats.usage;
-                    const memLimit = containerStats.memory_stats.limit;
-
+                    const memUsed = containerStats.memory_stats.usage || 0;
                     const stack = containerInfo.Labels['com.docker.compose.project'] ||
                         containerInfo.Labels['com.docker.stack.namespace'] ||
                         'standalone';
@@ -297,18 +341,26 @@ export class MonitorService implements OnModuleInit {
                         name: containerInfo.Names[0].replace('/', ''),
                         image: containerInfo.Image,
                         status: containerInfo.State,
-                        stack: stack,
+                        stack,
                         cpu: cpuPercent.toFixed(2) + '%',
                         memory: (memUsed / 1024 / 1024).toFixed(2) + ' MB',
                         isIdle: cpuPercent < 0.05,
                         network: {
-                            rx: (containerStats.networks?.eth0?.rx_bytes / 1024 / 1024).toFixed(2) + ' MB',
-                            tx: (containerStats.networks?.eth0?.tx_bytes / 1024 / 1024).toFixed(2) + ' MB',
+                            rx: ((containerStats.networks?.eth0?.rx_bytes || 0) / 1024 / 1024).toFixed(2) + ' MB',
+                            tx: ((containerStats.networks?.eth0?.tx_bytes || 0) / 1024 / 1024).toFixed(2) + ' MB',
                         },
                         volumes: containerInfo.Mounts?.map(m => m.Destination) || [],
                     };
-                })
-            );
+                } catch {
+                    // Skip containers that fail/timeout
+                    return null;
+                }
+            });
+
+            const raw = await this.runConcurrent(tasks, 4);
+            const stats = raw.filter(Boolean);
+
+            this.dockerStatsCache = { data: stats, ts: now };
             return stats;
         } catch (error) {
             return { error: 'Docker socket not available or permission denied' };

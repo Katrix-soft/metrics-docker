@@ -20,9 +20,9 @@ services:
       resources:
         limits:
           cpus: '0.50'
-          memory: 512M
+          memory: 160M
         reservations:
-          memory: 128M
+          memory: 64M
 
   frontend-metrica:
     build:

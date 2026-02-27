@@ -287,7 +287,7 @@ export class AppComponent implements OnInit, OnDestroy, AfterViewInit {
 
     startApp() {
         this.fetchData();
-        this.interval = setInterval(() => this.fetchData(), 5000);
+        this.interval = setInterval(() => this.fetchData(), 10000);
 
         // Essential: Init charts after DOM is rendered by *ngIf
         setTimeout(() => {
