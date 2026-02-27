@@ -135,31 +135,61 @@ export class MonitorController {
 
     @All('webhook/whatsapp')
     async handleWhatsAppWebhook(@Query() query: any, @Body() body: any) {
-        // Detailed log to catch what CallMeBot is actually sending
-        console.log('[WhatsApp Webhook] Incoming:', {
-            query: JSON.stringify(query),
-            body: JSON.stringify(body)
-        });
 
-        // Some bots use different field names
-        const message = (query.text || query.message || body.text || body.message || '').toString();
-        const incomingPhone = (query.phone || query.sender || query.from || body.phone || body.sender || body.from || '').toString();
+        // Full dump — critical for debugging CallMeBot format
+        console.log('[WA Webhook] ===== INCOMING =====');
+        console.log('[WA Webhook] Query:', JSON.stringify(query));
+        console.log('[WA Webhook] Body:', JSON.stringify(body));
+        console.log('[WA Webhook] ==================');
 
-        if (!message) return { ok: true, status: 'Empty message' };
+        // Extract message — try every possible field name CallMeBot might use
+        const rawMessage = (
+            query.text ?? query.message ?? query.msg ?? query.content ?? query.Body ??
+            body.text ?? body.message ?? body.msg ?? body.content ?? body.Body ?? ''
+        ).toString().trim();
+
+        // Extract phone — try every possible field name
+        const rawPhone = (
+            query.phone ?? query.sender ?? query.from ?? query.number ?? query.msisdn ?? query.wa_id ??
+            body.phone ?? body.sender ?? body.from ?? body.number ?? body.msisdn ?? body.wa_id ?? ''
+        ).toString();
+
+        console.log(`[WA Webhook] Message: "${rawMessage}" | Phone: "${rawPhone}"`);
+
+        if (!rawMessage) {
+            console.log('[WA Webhook] Empty message — ignored.');
+            return { ok: true, status: 'empty' };
+        }
 
         const authorizedPhone = '5492616557673';
-        const cleanIncoming = incomingPhone.replace(/\D/g, '');
+        const cleanIncoming = rawPhone.replace(/\D/g, '');
         const cleanAuthorized = authorizedPhone.replace(/\D/g, '');
 
-        // If no phone is received, we log it but don't authorized (for security)
-        // unless it's a very specific testing scenario
-        if (cleanIncoming.includes(cleanAuthorized) || cleanAuthorized.includes(cleanIncoming)) {
-            console.log(`[WhatsApp] Authorized match for ${incomingPhone}. Processing: ${message}`);
-            const responseMessage = await this.monitorService.processCommand(message);
-            await this.monitorService.sendWhatsApp(responseMessage);
+        // Flexible phone matching:
+        // 1. No phone provided → trust it (webhook URL is already a secret)
+        // 2. Exact match
+        // 3. Last-10-digits match (handles country code variations like 549... vs 54...)
+        const noPhoneProvided = cleanIncoming.length === 0;
+        const exactMatch = cleanIncoming === cleanAuthorized;
+        const suffixMatch = cleanIncoming.length >= 8 &&
+            (cleanAuthorized.endsWith(cleanIncoming.slice(-10)) ||
+                cleanIncoming.endsWith(cleanAuthorized.slice(-10)));
+
+        const isAuthorized = noPhoneProvided || exactMatch || suffixMatch;
+
+        if (isAuthorized) {
+            console.log(`[WA Webhook] ✅ Authorized (noPhone:${noPhoneProvided} exact:${exactMatch} suffix:${suffixMatch}). Processing: "${rawMessage}"`);
+            try {
+                const responseMessage = await this.monitorService.processCommand(rawMessage);
+                await this.monitorService.sendWhatsApp(responseMessage);
+                console.log(`[WA Webhook] ✅ Response sent.`);
+            } catch (err) {
+                console.error('[WA Webhook] ❌ Error processing command:', err);
+            }
         } else {
-            console.warn(`[WhatsApp] Unauthorized phone: "${incomingPhone}" (Wanted: ${authorizedPhone})`);
+            console.warn(`[WA Webhook] ❌ Unauthorized phone: "${cleanIncoming}" (expected: "${cleanAuthorized}")`);
         }
+
         return { ok: true };
     }
 }
