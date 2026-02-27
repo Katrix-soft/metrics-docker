@@ -17,20 +17,10 @@ RUN find dist -name index.html -exec dirname {} \; > /tmp/dist_path && \
 
 # Stage 2: Serve
 FROM nginx:alpine
-RUN apk add --no-cache apache2-utils
 
 # Copiamos los archivos estáticos
 COPY --from=builder /app/dist /usr/share/nginx/html
 COPY frontend/nginx.conf /etc/nginx/conf.d/default.conf
 
-# Script de entrada para configurar Basic Auth dinámicamente
-RUN printf "#!/bin/sh\n\
-    if [ -n \"\$AUTH_USER\" ] && [ -n \"\$AUTH_PASS\" ]; then\n\
-    htpasswd -b -c /etc/nginx/.htpasswd \"\$AUTH_USER\" \"\$AUTH_PASS\"\n\
-    else\n\
-    htpasswd -b -c /etc/nginx/.htpasswd admin katrix2026\n\
-    fi\n\
-    exec nginx -g 'daemon off;'\n" > /entrypoint.sh && chmod +x /entrypoint.sh
-
 EXPOSE 4200
-ENTRYPOINT ["/entrypoint.sh"]
+CMD ["nginx", "-g", "daemon off;"]
