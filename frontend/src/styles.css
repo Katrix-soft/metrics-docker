@@ -964,6 +964,175 @@ h3 {
   }
 }
 
+/* =============================================
+   BIOMETRIC SETUP MODAL
+   ============================================= */
+
+.bio-setup-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.85);
+  backdrop-filter: blur(12px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 4000;
+  animation: fadeIn 0.3s ease;
+  padding: 1.5rem;
+}
+
+.bio-setup-card {
+  background: rgba(22, 27, 34, 0.95);
+  border: 1px solid rgba(88, 166, 255, 0.2);
+  border-radius: 28px;
+  padding: 2.5rem;
+  width: 100%;
+  max-width: 420px;
+  text-align: center;
+  box-shadow:
+    0 0 0 1px rgba(88, 166, 255, 0.05),
+    0 40px 80px rgba(0, 0, 0, 0.7);
+  animation: cardEntrance 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.2);
+}
+
+.bio-setup-icon {
+  width: 100px;
+  height: 100px;
+  background: rgba(88, 166, 255, 0.08);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 1.5rem;
+  position: relative;
+}
+
+.bio-ring {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 1.5px solid rgba(88, 166, 255, 0.3);
+  animation: bioRingPulse 2.5s ease-out infinite;
+}
+
+.bio-ring-2 {
+  animation-delay: 1s;
+  border-color: rgba(88, 166, 255, 0.15);
+}
+
+@keyframes bioRingPulse {
+  0% {
+    transform: scale(1);
+    opacity: 0.7;
+  }
+
+  100% {
+    transform: scale(1.6);
+    opacity: 0;
+  }
+}
+
+.bio-setup-title {
+  font-size: 1.6rem;
+  font-weight: 800;
+  color: #fff;
+  margin-bottom: 0.8rem;
+  letter-spacing: -0.02em;
+}
+
+.bio-setup-desc {
+  font-size: 0.95rem;
+  color: var(--secondary-text);
+  line-height: 1.7;
+  margin-bottom: 2rem;
+}
+
+.bio-setup-desc strong {
+  color: var(--text-color);
+}
+
+.bio-setup-status {
+  background: rgba(88, 166, 255, 0.08);
+  border: 1px solid rgba(88, 166, 255, 0.2);
+  border-radius: 10px;
+  padding: 0.8rem;
+  font-size: 0.9rem;
+  color: var(--accent-color);
+  margin-bottom: 1.5rem;
+  animation: fadeIn 0.3s ease;
+}
+
+.bio-setup-success {
+  background: rgba(35, 134, 54, 0.1);
+  border: 1px solid rgba(35, 134, 54, 0.3);
+  border-radius: 14px;
+  padding: 1.2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.8rem;
+  font-size: 0.95rem;
+  color: #3fb950;
+  font-weight: 600;
+  margin-bottom: 1.5rem;
+  animation: fadeIn 0.4s ease;
+}
+
+.bio-setup-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+}
+
+.bio-btn-primary {
+  width: 100%;
+  padding: 1rem 1.5rem;
+  background: linear-gradient(135deg, #58a6ff, #1f6feb);
+  color: #fff;
+  border: none;
+  border-radius: 14px;
+  font-size: 1rem;
+  font-weight: 800;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 0.3s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.7rem;
+  letter-spacing: 0.04rem;
+  box-shadow: 0 4px 20px rgba(88, 166, 255, 0.35);
+}
+
+.bio-btn-primary:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 28px rgba(88, 166, 255, 0.5);
+}
+
+.bio-btn-primary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.bio-btn-secondary {
+  width: 100%;
+  padding: 0.9rem;
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: var(--secondary-text);
+  border-radius: 14px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.bio-btn-secondary:hover {
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-color);
+}
+
 @keyframes fadeIn {
   from {
     opacity: 0;

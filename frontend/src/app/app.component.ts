@@ -89,10 +89,15 @@ export class AppComponent implements OnInit, OnDestroy, AfterViewInit {
     }
 
     async checkBiometricsAvailability() {
-        if (window.PublicKeyCredential) {
-            // Chrome/Safari on mobile often return false if not on HTTPS or if user hasn't interacted.
-            // We just check if the API exists.
-            this.biometrySupported = true;
+        // Biometrics only work on HTTPS or localhost
+        const isSecure = window.location.protocol === 'https:' || window.location.hostname === 'localhost';
+        if (window.PublicKeyCredential && isSecure) {
+            try {
+                const available = await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable();
+                this.biometrySupported = available;
+            } catch {
+                this.biometrySupported = !!window.PublicKeyCredential;
+            }
         } else {
             this.biometrySupported = false;
         }
@@ -204,6 +209,88 @@ export class AppComponent implements OnInit, OnDestroy, AfterViewInit {
         );
     }
 
+    // ─── BIOMETRICS (WebAuthn / FIDO2) ────────────────────────────────────────
+
+    /** Convert ArrayBuffer to base64 string for localStorage */
+    private bufferToBase64(buffer: ArrayBuffer): string {
+        return btoa(String.fromCharCode(...new Uint8Array(buffer)));
+    }
+
+    /** Convert base64 string back to Uint8Array */
+    private base64ToUint8Array(b64: string): Uint8Array {
+        return Uint8Array.from(atob(b64), c => c.charCodeAt(0));
+    }
+
+    /**
+     * REGISTER: Creates a new WebAuthn credential and saves its ID to localStorage.
+     * This is the fix for the bug: previously the credential was created but never stored.
+     */
+    async activateBiometrics() {
+        if (!window.PublicKeyCredential) {
+            this.statusMessage = '❌ WebAuthn no disponible en este navegador.';
+            this.clearStatus();
+            return;
+        }
+
+        try {
+            this.statusMessage = '🔍 Esperando tu huella o Face ID...';
+            const challenge = new Uint8Array(32);
+            window.crypto.getRandomValues(challenge);
+
+            const options: CredentialCreationOptions = {
+                publicKey: {
+                    challenge,
+                    rp: { name: 'Katrix Monitor', id: window.location.hostname },
+                    user: {
+                        id: Uint8Array.from('katrix-admin-v1', c => c.charCodeAt(0)),
+                        name: 'admin@katrix',
+                        displayName: 'Admin Katrix'
+                    },
+                    pubKeyCredParams: [
+                        { alg: -7, type: 'public-key' },   // ES256 (preferred)
+                        { alg: -257, type: 'public-key' }  // RS256 (fallback)
+                    ],
+                    authenticatorSelection: {
+                        authenticatorAttachment: 'platform', // use device biometrics (not USB key)
+                        userVerification: 'required',
+                        residentKey: 'preferred'
+                    },
+                    timeout: 60000
+                }
+            };
+
+            const credential = await navigator.credentials.create(options) as PublicKeyCredential;
+
+            if (!credential) throw new Error('No se obtuvo credencial.');
+
+            // ✅ KEY FIX: Save credential ID so we can reference it during login
+            const credId = this.bufferToBase64(credential.rawId);
+            localStorage.setItem('katrix_bio_cred_id', credId);
+            localStorage.setItem('katrix_bio_linked', 'true');
+
+            this.isBiometricLinked = true;
+            this.statusMessage = '✅ ¡Huella/Face ID vinculado exitosamente!';
+            this.clearStatus();
+        } catch (e: any) {
+            console.error('[Bio Register]', e);
+            if (e.name === 'NotAllowedError') {
+                this.statusMessage = '⚠️ Cancelado o no permitido por el dispositivo.';
+            } else if (e.name === 'InvalidStateError') {
+                this.statusMessage = '⚠️ Ya existe una credencial para este dispositivo.';
+                // Still mark as linked since it was registered before
+                localStorage.setItem('katrix_bio_linked', 'true');
+                this.isBiometricLinked = true;
+            } else {
+                this.statusMessage = '❌ Error al vincular: ' + (e.message || 'Desconocido');
+            }
+            this.clearStatus();
+        }
+    }
+
+    /**
+     * AUTHENTICATE: Uses the saved credential ID to authenticate with WebAuthn.
+     * This is the fix: we now pass allowCredentials with the stored credential ID.
+     */
     async loginWithBiometrics() {
         if (!window.PublicKeyCredential) {
             this.loginError = 'Biometría no disponible en este navegador.';
@@ -211,78 +298,64 @@ export class AppComponent implements OnInit, OnDestroy, AfterViewInit {
         }
 
         if (window.location.protocol !== 'https:' && window.location.hostname !== 'localhost') {
-            this.loginError = '❌ REQUERIDO: HTTPS para usar Huella/Cara.';
+            this.loginError = '❌ REQUERIDO: HTTPS para usar Huella/Face ID.';
             return;
         }
 
         try {
-            this.statusMessage = 'Escaneando identidad...';
+            this.statusMessage = '🔍 Verificando identidad...';
             const challenge = new Uint8Array(32);
             window.crypto.getRandomValues(challenge);
 
-            const options: any = {
-                publicKey: {
-                    challenge: challenge,
-                    rpId: window.location.hostname,
-                    userVerification: "required",
-                },
+            // Recover stored credential ID
+            const storedCredId = localStorage.getItem('katrix_bio_cred_id');
+
+            const publicKeyOptions: PublicKeyCredentialRequestOptions = {
+                challenge,
+                rpId: window.location.hostname,
+                userVerification: 'required',
+                timeout: 60000,
+                // ✅ KEY FIX: Tell the browser exactly which credential to use
+                ...(storedCredId ? {
+                    allowCredentials: [{
+                        type: 'public-key' as const,
+                        id: this.base64ToUint8Array(storedCredId).buffer as ArrayBuffer,
+                        transports: ['internal' as AuthenticatorTransport]
+                    }]
+                } : {})
             };
 
-            const credential = await navigator.credentials.get(options);
+            const credential = await navigator.credentials.get({ publicKey: publicKeyOptions });
 
             if (credential) {
                 this.isLoggedIn = true;
                 localStorage.setItem('katrix_token', 'katrix-secret-token');
                 this.startApp();
-                this.statusMessage = '✅ Acceso verificado';
+                this.statusMessage = '✅ Acceso biométrico verificado';
                 this.clearStatus();
             }
         } catch (e: any) {
-            console.error('BioError:', e);
+            console.error('[Bio Login]', e);
             if (e.name === 'SecurityError') {
-                this.loginError = '❌ Error de Dominio: No puedes usar IPs, solo dominios real con SSL.';
+                this.loginError = '❌ Error de dominio: usá un dominio real con SSL, no una IP.';
             } else if (e.name === 'NotAllowedError') {
-                this.loginError = 'Acceso cancelado.';
+                this.loginError = 'Acceso cancelado o tiempo agotado.';
+            } else if (e.name === 'InvalidStateError') {
+                this.loginError = 'Credencial no encontrada en este dispositivo.';
             } else {
-                this.loginError = 'Error: ' + (e.message || 'Fallo biometría');
+                this.loginError = 'Error: ' + (e.message || 'Fallo de biometría');
             }
             this.statusMessage = '';
         }
     }
 
-    async activateBiometrics() {
-        if (!window.PublicKeyCredential) return;
-
-        try {
-            this.statusMessage = 'Escanea tu huella para vincular...';
-            const challenge = new Uint8Array(32);
-            window.crypto.getRandomValues(challenge);
-
-            const options: any = {
-                publicKey: {
-                    challenge: challenge,
-                    rp: { name: "NexPulse", id: window.location.hostname },
-                    user: {
-                        id: Uint8Array.from("nexpulse-v1", c => c.charCodeAt(0)),
-                        name: "admin@nexpulse",
-                        displayName: "Admin NexPulse"
-                    },
-                    pubKeyCredParams: [{ alg: -7, type: "public-key" }],
-                    authenticatorSelection: { userVerification: "required" },
-                    timeout: 60000
-                }
-            };
-
-            await navigator.credentials.create(options);
-
-            this.isBiometricLinked = true;
-            localStorage.setItem('katrix_bio_linked', 'true');
-            this.statusMessage = '✅ ¡Huella vinculada con éxito!';
-            this.clearStatus();
-        } catch (e: any) {
-            this.statusMessage = '❌ Error al vincular';
-            this.clearStatus();
-        }
+    /** Unlink biometrics — clears stored credentials */
+    unlinkBiometrics() {
+        localStorage.removeItem('katrix_bio_linked');
+        localStorage.removeItem('katrix_bio_cred_id');
+        this.isBiometricLinked = false;
+        this.statusMessage = '🔓 Biometría desvinculada.';
+        this.clearStatus();
     }
 
     startApp() {
