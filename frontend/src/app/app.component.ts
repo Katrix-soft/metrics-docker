@@ -39,6 +39,7 @@ export class AppComponent implements OnInit, OnDestroy, AfterViewInit {
     logInterval: any;
     showEditModal = false;
     showSettings = false;
+    showBotPanel = false;
     selectedMemory = 128;
     selectedCpu = 50;
 
@@ -650,13 +651,31 @@ export class AppComponent implements OnInit, OnDestroy, AfterViewInit {
         this.statusMessage = 'Sending WhatsApp...';
         this.http.post('/api/notify/whatsapp', {
             message: '🚀 NexPulse by Katrix: Test successful to 5492616557673!'
-
         }).subscribe({
             next: (ok) => {
                 this.statusMessage = ok ? 'WhatsApp Sent!' : 'Failed (Check CallMeBot status)';
                 this.clearStatus();
             },
             error: () => this.statusMessage = 'Network error'
+        });
+    }
+
+    // Trigger bot commands manually from the UI — sends response via WhatsApp
+    sendBotCommand(command: string = 'hola') {
+        this.statusMessage = `⏳ Enviando comando "${command}" al bot...`;
+        this.http.post('/api/bot/command', { command }).subscribe({
+            next: (res: any) => {
+                if (res.ok) {
+                    this.statusMessage = `✅ Bot respondió a "${command}" por WhatsApp`;
+                } else {
+                    this.statusMessage = `⚠️ Comando procesado pero falló el envío de WhatsApp`;
+                }
+                this.clearStatus();
+            },
+            error: () => {
+                this.statusMessage = '❌ Error al contactar el bot';
+                this.clearStatus();
+            }
         });
     }
 

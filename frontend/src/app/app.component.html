@@ -283,11 +283,34 @@
             <button class="pause-btn" (click)="showSettings = true" style="background: #24292f;">
                 ALERT SETTINGS
             </button>
+            <button class="pause-btn" (click)="showBotPanel = !showBotPanel"
+                style="background: #1a3a1a; border: 1px solid #238636; color: #3fb950;">
+                📲 BOT WA
+            </button>
             <button class="pause-btn" (click)="logout()" style="background: #da3633; color: white;">
                 LOGOUT
             </button>
         </div>
     </header>
+
+    <!-- WhatsApp Bot Panel -->
+    <div class="bot-panel" *ngIf="showBotPanel">
+        <div class="bot-panel-header">
+            <span>📲 NexPulse Bot — WhatsApp</span>
+            <button (click)="showBotPanel = false" class="bot-close">✕</button>
+        </div>
+        <p class="bot-panel-desc">
+            Enviá un comando al bot y te responde por WhatsApp al <strong>+549 261 655 7673</strong>
+        </p>
+        <div class="bot-commands">
+            <button class="bot-cmd-btn" (click)="sendBotCommand('hola')">👋 Menú</button>
+            <button class="bot-cmd-btn" (click)="sendBotCommand('1')">🖥️ Sistema</button>
+            <button class="bot-cmd-btn" (click)="sendBotCommand('2')">🐳 Stacks</button>
+            <button class="bot-cmd-btn" (click)="sendBotCommand('3')">✨ Optimize</button>
+            <button class="bot-cmd-btn" (click)="sendBotCommand('4')">📊 Capacidad</button>
+        </div>
+        <div class="bot-status" *ngIf="statusMessage">{{ statusMessage }}</div>
+    </div>
 
     <div class="dashboard-grid">
         <div class="card">

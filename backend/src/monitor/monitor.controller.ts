@@ -133,6 +133,16 @@ export class MonitorController {
         return this.monitorService.optimizeSystem();
     }
 
+    // Manual bot command trigger (for testing or UI-triggered commands)
+    @Post('bot/command')
+    async sendBotCommand(@Body() body: { command: string }) {
+        const cmd = (body.command || 'hola').trim();
+        const response = await this.monitorService.processCommand(cmd);
+        const sent = await this.monitorService.sendWhatsApp(response);
+        return { ok: sent, command: cmd, response };
+    }
+
+    // Webhook from CallMeBot (inbound messages)
     @All('webhook/whatsapp')
     async handleWhatsAppWebhook(@Query() query: any, @Body() body: any) {
 

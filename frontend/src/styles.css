@@ -1292,3 +1292,93 @@ h3 {
 .confirm-btn:active {
   transform: translateY(0);
 }
+
+/* ── WhatsApp Bot Panel ─────────────────────────────────── */
+.bot-panel {
+  background: rgba(22, 27, 34, 0.98);
+  border: 1px solid rgba(35, 134, 54, 0.3);
+  border-radius: 0 0 16px 16px;
+  margin: -0.5rem 2rem 1rem;
+  padding: 1rem 1.5rem;
+  animation: slideDown 0.25s ease;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.bot-panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-weight: 700;
+  color: #3fb950;
+  font-size: 0.9rem;
+  margin-bottom: 0.5rem;
+}
+
+.bot-close {
+  background: none;
+  border: none;
+  color: var(--secondary-text);
+  cursor: pointer;
+  font-size: 1rem;
+  padding: 0.2rem 0.4rem;
+  border-radius: 6px;
+  transition: color 0.2s;
+}
+
+.bot-close:hover {
+  color: #fff;
+}
+
+.bot-panel-desc {
+  font-size: 0.8rem;
+  color: var(--secondary-text);
+  margin-bottom: 0.8rem;
+}
+
+.bot-panel-desc strong {
+  color: var(--text-color);
+}
+
+.bot-commands {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.bot-cmd-btn {
+  background: rgba(35, 134, 54, 0.12);
+  border: 1px solid rgba(35, 134, 54, 0.3);
+  color: #3fb950;
+  border-radius: 10px;
+  padding: 0.5rem 1rem;
+  font-size: 0.8rem;
+  font-weight: 700;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.bot-cmd-btn:hover {
+  background: rgba(35, 134, 54, 0.25);
+  transform: translateY(-1px);
+}
+
+.bot-status {
+  margin-top: 0.8rem;
+  font-size: 0.8rem;
+  color: var(--accent-color);
+  padding: 0.5rem 0.8rem;
+  background: rgba(88, 166, 255, 0.07);
+  border-radius: 8px;
+}
