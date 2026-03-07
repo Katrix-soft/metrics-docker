@@ -1,75 +1,204 @@
-# 🚀 NexPulse by Katrix
+# NexPulse by Katrix — Monitor Lite
 
-**NexPulse** es una suite de monitoreo de infraestructura ultra-ligera y de alto rendimiento, diseñada específicamente para entornos de recursos limitados (VPS con tan solo 1vCPU y 2GB de RAM). Proporciona visibilidad en tiempo real y optimización autónoma de recursos utilizando un stack tecnológico moderno y una interfaz premium.
-
-![Estado](https://img.shields.io/badge/Estado-Listo%20para%20Producción-success?style=for-the-badge)
-![Tecnología](https://img.shields.io/badge/Construido%20con-NestJS%20%26%20Angular-blue?style=for-the-badge)
-![Optimización](https://img.shields.io/badge/Optimización%20RAM-Autónoma-blueviolet?style=for-the-badge)
-
-## ✨ Características Principales
-
-- **📊 Dashboard en Tiempo Real**: Interfaz oscura premium con visualizaciones fluidas en Chart.js para CPU y RAM.
-- **🐳 Gestión de Docker**: Inicia, detiene, reinicia e hiberna contenedores o stacks completos de Docker Compose directamente desde la web.
-- **🧠 Balanceo de RAM Autónomo**: Motor "Magic Optimize" que identifica servicios inactivos y los fuerza a un estado de RAM mínima (16MB) utilizando límites estrictos del kernel.
-- **📲 Integración con WhatsApp**: Bot de comandos totalmente funcional a través de CallMeBot. Revisa el estado, lista stacks y activa optimizaciones directamente desde tu WhatsApp.
-- **🔐 Seguridad Empresarial**:
-  - **Login Biométrico**: Acceso seguro mediante Huella Digital o FaceID a través de WebAuthn.
-  - **2FA (Autenticación de Dos Factores)**: Soporte para Google Authenticator en acciones críticas.
-  - **Protección Nginx**: Puerta de enlace con Basic Auth integrada.
-- **⚡ Consumo Eficiente**: Diseñado para consumir menos de 120MB de RAM, garantizando que el monitor no afecte el rendimiento de tus servicios de producción.
-
-## 🛠️ Stack Tecnológico
-
-| Capa                              | Tecnología                                            |
-| :-------------------------------- | :----------------------------------------------------- |
-| **Backend**                 | [NestJS](https://nestjs.com/) (Node.js)                   |
-| **Frontend**                | [Angular 17](https://angular.io/) (Standalone Components) |
-| **Visuales**                | [Chart.js](https://www.chartjs.org/)                      |
-| **Docker API**              | [Dockerode](https://github.com/apocas/dockerode)          |
-| **Información de Sistema** | [Systeminformation](https://systeminformation.io/)        |
-| **Bot Móvil**              | Integración CallMeBot Webhook                         |
-
-## 🚀 Inicio Rápido (Docker Compose)
-
-La forma más sencilla de desplegar **NexPulse** es utilizando el archivo `docker-compose.yml` pre-configurado.
-
-### 1. Requisitos
-
-- Docker y Docker Compose instalados.
-- Acceso al socket de Docker en `/var/run/docker.sock`.
-
-### 2. Configuración
-
-El sistema utiliza las siguientes credenciales por defecto en el `docker-compose.yml`:
-
-- **Usuario**: `admin`
-- **Contraseña**: `katrix2026` (Se recomienda cambiarlas mediante variables de entorno).
-
-### 3. Despliegue
-
-```bash
-docker-compose up -d --build
-```
-
-Accede al dashboard en `http://TU_IP_SERVIDOR:4205`.
-
-## 🤖 Control por WhatsApp
-
-Simplemente conecta tu API de CallMeBot y envía un mensaje con la palabra `Hola` a tu bot. Recibirás un menú interactivo:
-
-1. **Estado del Sistema**: Métricas actuales de RAM/CPU/Disco.
-2. **Stacks Activos**: Lista de tus servicios Docker en ejecución.
-3. **Magic Optimize**: Activa una limpieza profunda del sistema y balanceo de RAM.
-4. **Análisis de Capacidad**: Información predictiva sobre cuántos stacks más puede soportar tu VPS.
-
-## 📈 Estrategia de Optimización
-
-NexPulse no solo monitorea, toma acción. Cuando se detecta que un servicio está **IDLE** (Bajo uso de CPU por un periodo prolongado), el sistema:
-
-- Limita la `Memory` y `MemorySwap` a **16MB/32MB**.
-- Reduce la `MemoryReservation` a **6MB**.
-- Fuerza al kernel de Linux a reclamar las páginas de memoria no utilizadas, ahorrando hasta un 80% de RAM en servicios inactivos.
+> **Panel de control DevOps para infraestructura VPS + Docker + Portainer**  
+> Stack: Angular 17 · NestJS 10 · Docker · Portainer · GitHub API
 
 ---
 
-Desarrollado con ❤️ por **Katrix**. Pulsando el corazón de tu infraestructura.
+## ¿Qué es esto?
+
+**NexPulse Monitor** es un dashboard operativo propio de Katrix-soft que permite:
+
+- 📊 Monitorear CPU, RAM y disco del VPS en tiempo real
+- 🐳 Ver y controlar contenedores Docker (start, stop, restart, hibernate, recursos)
+- ⎇ Ver el estado de todos los repos de la organización GitHub
+- 🚀 Hacer **deploy con un click** (git pull + Portainer webhook)
+- 🔥 **Force Clean Redeploy** — baja contenedores viejos y relanza, sin SSH
+- 🔔 **Toast notifications** con estado del deploy y URL del servicio desplegado
+- 🤖 Bot de WhatsApp integrado para alertas y comandos remotos
+- 🔐 Login con contraseña, 2FA (TOTP) y biometría (WebAuthn/FIDO2)
+
+---
+
+## Arquitectura
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                        VPS (katrix.com.ar)                      │
+│                                                                 │
+│  ┌─────────────────────┐    ┌──────────────────────────────┐   │
+│  │  metricas-backend   │    │     metricas-frontend        │   │
+│  │  (NestJS / :3000)   │◄───│     (Angular → Nginx)        │   │
+│  │                     │    │     Puerto :4205             │   │
+│  │  • /api/system      │    └──────────────────────────────┘   │
+│  │  • /api/docker      │                                        │
+│  │  • /api/git/status  │    ┌──────────────────────────────┐   │
+│  │  • /api/git/deploy  │    │         Portainer            │   │
+│  │  • /api/git/force-  │───►│   Gestiona todos los stacks  │   │
+│  │    clean-redeploy   │    │   Recibe webhooks y redeploya│   │
+│  └──────┬──────────────┘    └──────────────────────────────┘   │
+│         │                                                        │
+│         ├── Docker Socket (/var/run/docker.sock)                │
+│         ├── Dockerode (Node.js Docker API client)               │
+│         └── GitHub API (fallback sin repos clonados)            │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## CI/CD — ¿Cómo funciona?
+
+Este proyecto implementa **CD (Continuous Deployment)** completo. El flujo es:
+
+```
+Developer                GitHub               NexPulse             Portainer
+   │                       │                     │                     │
+   │── git push main ──────►│                     │                     │
+   │                       │── GitHub Webhook ───►│                     │
+   │                       │   POST /api/github/  │                     │
+   │                       │   webhook            │                     │
+   │                       │                     │── POST webhook ─────►│
+   │                       │                     │   URL de Portainer   │
+   │                       │                     │                     │── docker pull
+   │                       │                     │                     │── docker build
+   │                       │                     │◄── 200 OK ──────────│
+   │                       │                     │                     │── containers up ✅
+```
+
+### ¿Cumple con CI/CD?
+
+| Etapa | ¿Implementado? | Mecanismo |
+|---|---|---|
+| **CI — Continuous Integration** | ⚠️ Parcial | No hay tests automatizados, pero el build de Docker falla si hay errores de compilación TypeScript |
+| **CD — Continuous Delivery** | ✅ Sí | Push a `main` → GitHub webhook → NexPulse → Portainer |
+| **CD — Deploy manual** | ✅ Sí | Botón "🚀 Deploy" en el dashboard |
+| **CD — Force Clean Deploy** | ✅ Sí | Botón "🔥 Force Clean Redeploy" — baja containers y relanza |
+| **Rollback** | ⚠️ Manual | Desde Portainer, apuntando a un commit anterior |
+
+> **Para CI completo** (pruebas automáticas), se puede agregar GitHub Actions con `npm test` antes de que el webhook dispare el deploy.
+
+---
+
+## Flujo de Deploy por Repo
+
+| Repo | Webhook Portainer | URL Deploy |
+|---|---|---|
+| `landingdj` | ✅ Configurado | https://dj.katrix.com.ar |
+| `metrics-docker` | ✅ Configurado | https://metricas.katrix.com.ar |
+| `erp-eana` | ✅ Configurado | https://app.katrix.com.ar |
+| `landing-k` | ⏳ Pendiente | https://katrix.com.ar |
+| `Landing-Katrix-16-07` | ⏳ Pendiente | https://katrix.com.ar |
+
+---
+
+## Stack Técnico
+
+### Backend (`/backend`)
+- **NestJS 10** con soporte WebSockets (Socket.IO)
+- **Dockerode** — control de contenedores vía Docker socket
+- **p-queue** — cola de operaciones git por repo (evita race conditions)
+- **systeminformation** — métricas del host (CPU, RAM, disco, red)
+- **otplib + qrcode** — 2FA TOTP compatible con Google Authenticator
+
+### Frontend (`/frontend`)
+- **Angular 17** standalone components
+- **Chart.js** — gráficos de CPU/RAM en tiempo real
+- **WebAuthn / FIDO2** — login biométrico (huella, Face ID) sin contraseña
+- **Socket.IO client** — actualizaciones en tiempo real vía WebSocket
+
+### Infraestructura
+- **Nginx** — sirve el frontend y proxea al backend
+- **Portainer** — gestiona los stacks Docker con webhooks automáticos
+- **GitHub Webhooks** — trigger automático de deploy al hacer `git push`
+- **Docker Compose** — orquestación local del stack de métricas
+
+---
+
+## Variables de Entorno
+
+```yaml
+# docker-compose.yml → backend-metrica
+AUTH_PASS=katrix2026                    # Contraseña del dashboard
+REPOSITORIES=landingdj,metrics-docker,erp-eana,...  # Repos a monitorear
+REPOS_BASE_PATH=/repos                 # Path base de repos clonados (opcional)
+GITHUB_TOKEN=ghp_...                  # Token GitHub (opcional, aumenta rate limit)
+
+# Portainer webhooks — un webhook por repo
+PORTAINER_WEBHOOK_LANDINGDJ=https://portainer.katrix.com.ar/api/stacks/webhooks/UUID
+PORTAINER_WEBHOOK_METRICS_DOCKER=https://portainer.katrix.com.ar/api/stacks/webhooks/UUID
+PORTAINER_WEBHOOK_ERP_EANA=https://portainer.katrix.com.ar/api/stacks/webhooks/UUID
+```
+
+---
+
+## Funcionalidades Principales
+
+### 🔔 Deploy Toast Notifications
+Al hacer click en "🚀 Deploy":
+1. Aparece toast bottom-right con barra de progreso animada
+2. Se actualiza en tiempo real via WebSocket cuando termina
+3. Al completar muestra la URL del servicio como link clickeable
+4. Auto-dismiss a los 7s (success) / 12s (error)
+
+### 🔥 Force Clean Redeploy
+Solución cuando Portainer falla con "container name already in use":
+1. Detecta contenedores del stack por label `com.docker.compose.project`
+2. Hace `stop` + `remove` vía Docker API (sin SSH)
+3. Dispara el webhook de Portainer → stack levanta limpio
+
+### ⎇ Git Activity (modo offline)
+Si los repos **no están clonados** en el VPS, el backend hace fallback automático a la GitHub API:
+- Muestra último commit, autor y fecha
+- Badge `GH API` indica el modo de origen
+- El status aparece en verde (`UP TO DATE`) igual
+
+### 🤖 Auto-optimización de RAM
+Cada 90 segundos el backend analiza contenedores:
+- Si CPU < 0.1% por 15+ ciclos → reduce RAM a mínimo (16MB)
+- Si el container vuelve a usarse → restaura RAM automáticamente
+- Nunca toca contenedores marcados como protegidos (`metricas-*`, `portainer`, `nginx`, etc.)
+
+---
+
+## Comandos
+
+```bash
+# Desarrollo local
+cd frontend && npm install && npx ng serve --port 4205 --proxy-config proxy.conf.json
+cd backend  && npm install && npm run start:dev
+
+# Deploy en VPS (vía Portainer o manualmente)
+docker compose up -d --build
+
+# Ver logs
+docker logs metricas-backend  -f
+docker logs metricas-frontend -f
+```
+
+---
+
+## GitHub Webhook (setup único)
+
+Para que el deploy sea automático al hacer `git push`:
+
+1. Ir al repo en GitHub → **Settings → Webhooks → Add webhook**
+2. **Payload URL:** `https://metricas.katrix.com.ar/api/github/webhook`
+3. **Content type:** `application/json`
+4. **Events:** Solo `Push`
+5. ✅ Active
+
+El backend recibe el push, identifica el repo y dispara el webhook de Portainer correspondiente.
+
+---
+
+## Seguridad
+
+- Dashboard protegido con contraseña (`AUTH_PASS`)
+- Soporte 2FA con TOTP (Google Authenticator)
+- Login biométrico con WebAuthn (requiere HTTPS)
+- Webhook de GitHub sin secret (seguridad por oscuridad de URL — mejora futura: agregar `X-Hub-Signature-256`)
+- Endpoints de API protegidos con `SimpleAuthGuard` (Bearer token)
+
+---
+
+*NexPulse by Katrix © 2026 — Built with ❤️ by Antigravity*
