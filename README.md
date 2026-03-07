@@ -69,13 +69,13 @@ Developer                GitHub               NexPulse             Portainer
 
 | Etapa | ¿Implementado? | Mecanismo |
 |---|---|---|
-| **CI — Continuous Integration** | ⚠️ Parcial | No hay tests automatizados, pero el build de Docker falla si hay errores de compilación TypeScript |
-| **CD — Continuous Delivery** | ✅ Sí | Push a `main` → GitHub webhook → NexPulse → Portainer |
+| **CI — Continuous Integration** | ✅ Sí | GitHub Actions valida builds de NestJS y Angular en cada push |
+| **CD — Continuous Delivery** | ✅ Sí | Push a `main` → GitHub Actions (CI) → NexPulse → Portainer |
 | **CD — Deploy manual** | ✅ Sí | Botón "🚀 Deploy" en el dashboard |
 | **CD — Force Clean Deploy** | ✅ Sí | Botón "🔥 Force Clean Redeploy" — baja containers y relanza |
 | **Rollback** | ⚠️ Manual | Desde Portainer, apuntando a un commit anterior |
 
-> **Para CI completo** (pruebas automáticas), se puede agregar GitHub Actions con `npm test` antes de que el webhook dispare el deploy.
+> **CI Automatizada:** GitHub Actions ejecutará un build de validación para asegurar que el código compila correctamente. Si el CI falla, el deploy en el VPS no se actualizará, evitando caídas en producción.
 
 ---
 
