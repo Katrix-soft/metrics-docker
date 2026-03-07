@@ -570,6 +570,14 @@ export class AppComponent implements OnInit, OnDestroy, AfterViewInit {
             return;
         }
 
+        // Fix: Destroy existing charts to prevent "Canvas is already in use" error
+        if (this.cpuChart) {
+            this.cpuChart.destroy();
+        }
+        if (this.memChart) {
+            this.memChart.destroy();
+        }
+
         this.cpuChart = new Chart(this.cpuChartRef.nativeElement, {
             type: 'line',
             data: {
