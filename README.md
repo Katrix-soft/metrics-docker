@@ -91,6 +91,17 @@ Developer                GitHub               NexPulse             Portainer
 
 ---
 
+## Estabilidad y Red (Fixes v1.1)
+
+Hemos optimizado el stack para operar bajo **1 VCPU / 2GB RAM**:
+
+- **Proxy WSS (WebSockets)**: Nginx configurado con soporte nativo para `Upgrade` y `Connection` en `/socket.io`, estabilizando la comunicación en tiempo real.
+- **Node.js Heap Management**: Backend optimizado con `--max-old-space-size=112` para evitar crashes por "Out of Memory" durante picos de carga (como el análisis de Dockerode).
+- **Canvas Cleanup**: Solución al error "Canvas already in use" en el dashboard mediante la destrucción explícita de instancias anteriores de Chart.js al refrescar.
+- **API Stability**: Configuración de timeouts de 300s en Nginx para soportar operaciones de Git pesadas sin errores 502.
+
+---
+
 ## Stack Técnico
 
 ### Backend (`/backend`)
