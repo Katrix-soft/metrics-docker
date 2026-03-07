@@ -10,11 +10,10 @@ import { Subscription } from 'rxjs';
 // Agregá o modificá las URLs según tu dominio
 const REPO_URLS: Record<string, string> = {
   'landingdj': 'https://dj.katrix.com.ar',
-  'metrics-docker': 'https://monitor.katrix.com.ar',
-  'erp-eana': 'https://erp.katrix.com.ar',
+  'metrics-docker': 'https://metricas.katrix.com.ar',
+  'erp-eana': 'https://app.katrix.com.ar',
   'landing-k': 'https://katrix.com.ar',
-  'Landing-Katrix-16-07': 'https://katrix.com.ar',
-  'Login-Dashboard': 'https://app.katrix.com.ar',
+  'Landing-Katrix-16-07': 'https://katrix.com.ar'
 };
 
 export interface DeployToast {
