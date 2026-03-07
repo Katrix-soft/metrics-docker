@@ -28,8 +28,9 @@ import { CommonModule } from '@angular/common';
         <span class="queue-dot"></span> {{ repo.queueSize }} tasks pending
       </div>
 
-      <div class="portainer-badge" *ngIf="repo.portainerEnabled">
-        🐳 Portainer
+      <div class="source-badges">
+        <div class="portainer-badge" *ngIf="repo.portainerEnabled">🐳 Portainer</div>
+        <div class="api-badge" *ngIf="repo.source === 'github-api'">GH API</div>
       </div>
 
       <div class="repo-actions">
@@ -90,7 +91,9 @@ import { CommonModule } from '@angular/common';
 
     .queue-indicator { display: flex; align-items: center; gap: 0.4rem; font-size: 0.75rem; color: #d29922; background: rgba(210,153,34,0.1); border: 1px solid rgba(210,153,34,0.25); border-radius: 6px; padding: 0.3rem 0.7rem; }
     .queue-dot { width: 7px; height: 7px; border-radius: 50%; background: #d29922; animation: dotBlink 1s infinite; }
-    .portainer-badge { font-size: 0.72rem; color: #06b6d4; background: rgba(6,182,212,0.08); border: 1px solid rgba(6,182,212,0.25); border-radius: 6px; padding: 0.2rem 0.6rem; display: inline-block; }
+    .source-badges { display: flex; gap: 0.4rem; flex-wrap: wrap; }
+    .portainer-badge { font-size: 0.72rem; color: #06b6d4; background: rgba(6,182,212,0.08); border: 1px solid rgba(6,182,212,0.25); border-radius: 6px; padding: 0.2rem 0.6rem; }
+    .api-badge { font-size: 0.65rem; color: #8b949e; background: rgba(139,148,158,0.08); border: 1px solid rgba(139,148,158,0.2); border-radius: 6px; padding: 0.2rem 0.5rem; letter-spacing: 0.04rem; }
 
     .repo-actions { display: flex; gap: 0.5rem; margin-top: auto; }
     .git-btn { flex: 1; padding: 0.45rem 0.5rem; border-radius: 8px; border: 1px solid var(--border-color); background: #0d1117; color: var(--text-color); font-size: 0.8rem; font-weight: 600; cursor: pointer; transition: all 0.2s ease; font-family: inherit; }
@@ -106,11 +109,10 @@ export class RepoCardComponent {
   @Output() onDeploy = new EventEmitter<string>();
 
   get statusClass() {
-    switch (this.repo.status) {
-      case 'up to date': return 'green';
-      case 'updating': return 'yellow';
-      case 'error': return 'red';
-      default: return 'red';
-    }
+    if (this.repo.status === 'updating') return 'yellow';
+    if (this.repo.status === 'error') return 'red';
+    // 'up to date' from either local git or github api = green
+    if (this.repo.status === 'up to date') return 'green';
+    return 'red';
   }
 }
