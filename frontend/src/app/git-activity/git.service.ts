@@ -7,8 +7,9 @@ export class GitService {
     constructor(private http: HttpClient) { }
 
     private getHeaders() {
-        const token = localStorage.getItem('katrix_token') || 'katrix-secret-token';
-        return { headers: new HttpHeaders().set('Authorization', `Bearer ${token}`) };
+        // Must match AUTH_PASS used by the backend SimpleAuthGuard
+        const pass = 'katrix2026';
+        return { headers: new HttpHeaders().set('Authorization', `Bearer ${pass}`) };
     }
 
     getStatus(): Observable<any[]> {
@@ -21,5 +22,9 @@ export class GitService {
 
     deploy(repo: string): Observable<any> {
         return this.http.post('/api/git/deploy', { repo }, this.getHeaders());
+    }
+
+    forceCleanRedeploy(repo: string, composeProject: string): Observable<any> {
+        return this.http.post('/api/git/force-clean-redeploy', { repo, composeProject }, this.getHeaders());
     }
 }

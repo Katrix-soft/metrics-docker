@@ -26,7 +26,9 @@ import { Subscription } from 'rxjs';
           *ngFor="let repo of repositories"
           [repo]="repo"
           (onPull)="handlePull($event)"
-          (onDeploy)="handleDeploy($event)">
+          (onDeploy)="handleDeploy($event)"
+          (onForceRedeploy)="handleForceRedeploy($event, card)"
+          #card>
         </app-repo-card>
       </div>
 
@@ -90,7 +92,7 @@ export class GitDashboardComponent implements OnInit, OnDestroy {
       })
     );
 
-    ['pull-completed', 'deploy-completed', 'deploy-error'].forEach(event => {
+    ['pull-completed', 'deploy-completed', 'deploy-error', 'force-redeploy-completed', 'force-redeploy-error'].forEach(event => {
       this.sub.add(
         this.wsService.listen(event).subscribe(() => this.refresh())
       );
@@ -114,5 +116,32 @@ export class GitDashboardComponent implements OnInit, OnDestroy {
 
   handleDeploy(repo: string) {
     this.gitService.deploy(repo).subscribe(() => this.refresh());
+  }
+
+  handleForceRedeploy(event: { repo: string; composeProject: string }, card: RepoCardComponent) {
+    card.setForceRunning(true);
+    card.setForceResult('info', '⟳ Eliminando contenedores y disparando webhook...');
+
+    this.gitService.forceCleanRedeploy(event.repo, event.composeProject).subscribe({
+      next: (res) => {
+        card.setForceRunning(false);
+        if (res.error) {
+          card.setForceResult('error', `❌ Error: ${res.error}`);
+        } else {
+          const removed = res.removed?.length
+            ? `Eliminados: ${res.removed.join(', ')}. `
+            : 'No había contenedores activos. ';
+          const webhook = res.webhookTriggered
+            ? '🚀 Portainer webhook disparado — stack levantando.'
+            : '⚠️ Sin webhook configurado. Contenedores eliminados.';
+          card.setForceResult('success', removed + webhook);
+          setTimeout(() => this.refresh(), 3000);
+        }
+      },
+      error: (err) => {
+        card.setForceRunning(false);
+        card.setForceResult('error', `❌ ${err.error?.message || err.message || 'Error desconocido'}`);
+      }
+    });
   }
 }
