@@ -10,10 +10,23 @@ services:
       - /proc:/host/proc:ro
       - /sys:/host/sys:ro
       - /etc/os-release:/host/etc/os-release:ro
+      # Katrix-soft repos cloned on the VPS host (adjust path if different)
+      - /home/katrix/repos:/repos:rw
     environment:
       - PORT=3000
       - TZ=UTC
       - AUTH_PASS=katrix2026
+      # Repos from github.com/Katrix-soft — must be cloned in /home/katrix/repos/<name> on the VPS
+      - REPOSITORIES=landingdj,metrics-docker,erp-eana,landing-k,Landing-Katrix-16-07,Login-Dashboard
+      - REPOS_BASE_PATH=/repos
+      # Portainer webhook URLs per repo (Portainer → Stack → Webhooks → copiar URL)
+      # Format: PORTAINER_WEBHOOK_<REPO_NAME_UPPERCASE_NORMALIZED>=https://portainer.katrix.com.ar/api/stacks/webhooks/UUID
+      # - PORTAINER_WEBHOOK_LANDINGDJ=https://portainer.katrix.com.ar/api/stacks/webhooks/UUID_AQUI
+      - PORTAINER_WEBHOOK_METRICS_DOCKER=https://portainer.katrix.com.ar/api/stacks/webhooks/e67e7ad3-7212-4d02-81b6-8d41c10766f2
+      # - PORTAINER_WEBHOOK_ERP_EANA=https://portainer.katrix.com.ar/api/stacks/webhooks/UUID_AQUI
+      # - PORTAINER_WEBHOOK_LANDING_K=https://portainer.katrix.com.ar/api/stacks/webhooks/UUID_AQUI
+      # - PORTAINER_WEBHOOK_LANDING_KATRIX_16_07=https://portainer.katrix.com.ar/api/stacks/webhooks/UUID_AQUI
+      # - PORTAINER_WEBHOOK_LOGIN_DASHBOARD=https://portainer.katrix.com.ar/api/stacks/webhooks/UUID_AQUI
     expose:
       - "3000"
     deploy:

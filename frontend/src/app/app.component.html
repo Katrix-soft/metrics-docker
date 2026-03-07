@@ -287,6 +287,10 @@
                 style="background: #1a3a1a; border: 1px solid #238636; color: #3fb950;">
                 📲 BOT WA
             </button>
+            <button class="pause-btn" (click)="showGitActivity = !showGitActivity"
+                [style]="showGitActivity ? 'background:#1a2a3a; border:1px solid #58a6ff; color:#58a6ff;' : 'background:#1a2a3a; border:1px solid #30363d; color:#8b949e;'">
+                ⎇ GIT {{ showGitActivity ? 'ON' : 'OFF' }}
+            </button>
             <button class="pause-btn" (click)="logout()" style="background: #da3633; color: white;">
                 LOGOUT
             </button>
@@ -355,6 +359,9 @@
             </div>
         </div>
     </div>
+
+    <!-- Git/DevOps Activity Module -->
+    <app-git-dashboard *ngIf="showGitActivity"></app-git-dashboard>
 
     <div class="card">
         <div class="card-header-actions">

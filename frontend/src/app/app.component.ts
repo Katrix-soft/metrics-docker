@@ -3,11 +3,12 @@ import { CommonModule } from '@angular/common';
 import { HttpClient, HttpClientModule } from '@angular/common/http';
 import { FormsModule } from '@angular/forms';
 import Chart from 'chart.js/auto';
+import { GitDashboardComponent } from './git-activity/git-dashboard.component';
 
 @Component({
     selector: 'app-root',
     standalone: true,
-    imports: [CommonModule, HttpClientModule, FormsModule],
+    imports: [CommonModule, HttpClientModule, FormsModule, GitDashboardComponent],
     templateUrl: './app.component.html',
 })
 export class AppComponent implements OnInit, OnDestroy, AfterViewInit {
@@ -20,6 +21,7 @@ export class AppComponent implements OnInit, OnDestroy, AfterViewInit {
     is2FAEnabled = false;
     biometrySupported = false;
     showBioSetupPrompt = false;
+    showGitActivity = true; // toggle ⎇ GIT module
 
     loginPassword = '';
     login2FACode = '';
