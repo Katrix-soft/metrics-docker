@@ -3,6 +3,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.backend
+    container_name: metricas-backend
     restart: always
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
@@ -40,6 +41,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.frontend
+    container_name: metricas-frontend
     restart: always
     ports:
       - "4205:4200"
