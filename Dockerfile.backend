@@ -1,4 +1,5 @@
-FROM node:20-alpine
+FROM node:20-alpine AS builder
+
 WORKDIR /app
 COPY backend/package*.json ./
 RUN npm install --legacy-peer-deps
@@ -7,12 +8,14 @@ RUN npm run build
 
 # Runtime
 FROM node:20-alpine
+
 WORKDIR /app
 ENV NODE_ENV=production
-RUN apk add --no-cache tzdata procps util-linux
-COPY --from=0 /app/dist ./dist
-COPY --from=0 /app/package*.json ./
+ENV TZ=America/Argentina/Mendoza
+
+COPY --from=builder /app/dist ./dist
+COPY --from=builder /app/package*.json ./
 RUN npm install --omit=dev --legacy-peer-deps
+
 EXPOSE 3000
-# Limit Node.js heap and optimize for memory
 CMD ["node", "--max-old-space-size=112", "--optimize-for-size", "dist/main"]
