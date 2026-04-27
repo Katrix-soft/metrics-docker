@@ -113,6 +113,126 @@ h3 {
   transform: translateY(-2px);
 }
 
+/* ── Memory Details card ─────────────────────────── */
+.mem-details-card {
+  display: flex;
+  flex-direction: column;
+}
+
+.mem-detail-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+  margin-top: 0.8rem;
+}
+
+.mem-detail-row {
+  display: grid;
+  grid-template-columns: 90px 1fr 70px;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.mem-label {
+  font-size: 0.72rem;
+  color: var(--secondary-text);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.mem-value {
+  font-size: 0.75rem;
+  color: var(--text-color);
+  text-align: right;
+  font-weight: 600;
+}
+
+.mem-bar-wrap {
+  height: 6px;
+  background: rgba(255,255,255,0.06);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.mem-bar {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.6s ease;
+}
+
+.mem-bar.used      { background: linear-gradient(90deg, #f85149, #da3633); }
+.mem-bar.available { background: linear-gradient(90deg, #238636, #3fb950); }
+.mem-bar.cached    { background: linear-gradient(90deg, #d29922, #e3b341); }
+.mem-bar.buffers   { background: linear-gradient(90deg, #e67e22, #f39c12); }
+.mem-bar.free      { background: linear-gradient(90deg, #30363d, #58a6ff); }
+.mem-bar.swap      { background: linear-gradient(90deg, #6f42c1, #a78bfa); }
+/* ─────────────────────────────────────────────────── */
+
+/* ── Processes Panel (htop) ──────────────────────── */
+.proc-table td, .proc-table th {
+  padding: 0.6rem 0.8rem;
+  vertical-align: middle;
+}
+
+.proc-bar-wrap {
+  height: 4px;
+  background: rgba(255,255,255,0.06);
+  border-radius: 2px;
+  overflow: hidden;
+  margin-bottom: 2px;
+  min-width: 40px;
+}
+
+.proc-bar {
+  height: 100%;
+  border-radius: 2px;
+  transition: width 0.4s ease;
+}
+
+.proc-bar.cpu-bar { background: linear-gradient(90deg, #f85149, #ff6b6b); }
+.proc-bar.mem-bar { background: linear-gradient(90deg, #58a6ff, #a78bfa); }
+
+.proc-state {
+  font-weight: 700;
+  font-size: 0.8rem;
+  font-family: monospace;
+}
+
+.proc-tab-btn {
+  background: var(--card-bg);
+  border: 1px solid var(--border-color);
+  color: var(--secondary-text);
+  padding: 0.3rem 0.9rem;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.75rem;
+  font-weight: 600;
+  font-family: inherit;
+  transition: all 0.2s;
+}
+
+.proc-tab-btn.active {
+  background: rgba(167, 139, 250, 0.15);
+  border-color: #a78bfa;
+  color: #a78bfa;
+}
+
+.proc-tab-btn:hover:not(.active) {
+  border-color: var(--accent-color);
+  color: var(--text-color);
+}
+
+.proc-row-hot {
+  background: rgba(248, 81, 73, 0.04);
+}
+
+.proc-row-hot td:first-child::before {
+  content: '🔥';
+  margin-right: 4px;
+  font-size: 0.65rem;
+}
+/* ─────────────────────────────────────────────────── */
+
 .card-title {
   color: var(--secondary-text);
   font-size: 0.9rem;

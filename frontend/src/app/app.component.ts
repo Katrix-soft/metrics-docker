@@ -74,6 +74,17 @@ export class AppComponent implements OnInit, OnDestroy, AfterViewInit {
     memData: number[] = [];
     labels: string[] = [];
     window = window;
+    Math = Math; // expose Math to template
+
+    // ── Processes panel ────────────────────────────────────────────────
+    showProcesses = false;
+    processes: any = null;
+    procTab: 'cpu' | 'mem' = 'cpu';
+
+    // ── Alert Thresholds ──────────────────────────────────────────────
+    thresholdCpu  = 90;
+    thresholdRam  = 90;
+    thresholdDisk = 85;
 
     constructor(private http: HttpClient) { }
 
@@ -365,6 +376,7 @@ export class AppComponent implements OnInit, OnDestroy, AfterViewInit {
     startApp() {
         this.fetchData();
         this.interval = setInterval(() => this.fetchData(), 10000);
+        this.loadThresholds();
 
         // Essential: Init charts after DOM is rendered by *ngIf
         setTimeout(() => {
@@ -434,6 +446,28 @@ export class AppComponent implements OnInit, OnDestroy, AfterViewInit {
             stacks: potentialStacks,
             status: status
         };
+    }
+
+    // ── Memory breakdown helpers for Memory Details card ──────────────────────
+
+    /** Returns cache as % of total RAM */
+    getCachePercent(): number {
+        if (!this.system?.memory?.totalRaw || !this.system?.memory?.cached) return 0;
+        const cachedBytes = parseFloat(this.system.memory.cached) * 1024 * 1024;
+        return Math.min(100, (cachedBytes / this.system.memory.totalRaw) * 100);
+    }
+
+    /** Returns buffers as % of total RAM */
+    getBufferPercent(): number {
+        if (!this.system?.memory?.totalRaw || !this.system?.memory?.buffers) return 0;
+        const bufBytes = parseFloat(this.system.memory.buffers) * 1024 * 1024;
+        return Math.min(100, (bufBytes / this.system.memory.totalRaw) * 100);
+    }
+
+    /** Returns truly free RAM as % of total */
+    getFreePercent(): number {
+        if (!this.system?.memory?.totalRaw || !this.system?.memory?.availableRaw) return 0;
+        return Math.min(100, (this.system.memory.availableRaw / this.system.memory.totalRaw) * 100);
     }
 
     stopContainer(id: string) {
@@ -783,5 +817,56 @@ export class AppComponent implements OnInit, OnDestroy, AfterViewInit {
 
     openLink(url: string) {
         window.open(url, '_blank');
+    }
+
+    // \u2500\u2500 Processes Panel (htop) \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+
+    toggleProcesses() {
+        this.showProcesses = !this.showProcesses;
+        if (this.showProcesses && !this.processes) {
+            this.fetchProcesses();
+        }
+    }
+
+    fetchProcesses() {
+        this.http.get('/api/processes').subscribe({
+            next: (data: any) => { this.processes = data; },
+            error: () => { this.processes = { total: 0, running: 0, sleeping: 0, byCpu: [], byMem: [], error: 'N/A' }; }
+        });
+    }
+
+    // \u2500\u2500 Alert Thresholds \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+
+    loadThresholds() {
+        this.http.get('/api/thresholds').subscribe({
+            next: (t: any) => {
+                this.thresholdCpu  = t.cpuAlert  ?? 90;
+                this.thresholdRam  = t.ramAlert  ?? 90;
+                this.thresholdDisk = t.diskAlert ?? 85;
+            },
+            error: () => {} // keep defaults
+        });
+    }
+
+    saveThresholds() {
+        this.statusMessage = '\u23f3 Guardando umbrales...';
+        this.http.post('/api/thresholds', {
+            cpuAlert:  this.thresholdCpu,
+            ramAlert:  this.thresholdRam,
+            diskAlert: this.thresholdDisk,
+        }).subscribe({
+            next: (res: any) => {
+                if (res.success) {
+                    this.statusMessage = `\u2705 Umbrales guardados: CPU ${this.thresholdCpu}% · RAM ${this.thresholdRam}% · Disco ${this.thresholdDisk}%`;
+                } else {
+                    this.statusMessage = '\u274c Error al guardar umbrales';
+                }
+                this.clearStatus();
+            },
+            error: () => {
+                this.statusMessage = '\u274c Error de red al guardar';
+                this.clearStatus();
+            }
+        });
     }
 }

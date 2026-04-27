@@ -133,6 +133,25 @@ export class MonitorController {
         return this.monitorService.optimizeSystem();
     }
 
+    @Get('processes')
+    async getProcesses() {
+        return this.monitorService.getTopProcesses();
+    }
+
+    @Get('thresholds')
+    async getThresholds() {
+        return this.monitorService.getThresholds();
+    }
+
+    @Post('thresholds')
+    async saveThresholds(@Body() body: { cpuAlert: number; ramAlert: number; diskAlert: number }) {
+        return this.monitorService.saveThresholds(
+            Number(body.cpuAlert),
+            Number(body.ramAlert),
+            Number(body.diskAlert),
+        );
+    }
+
     // Manual bot command trigger (for testing or UI-triggered commands)
     @Post('bot/command')
     async sendBotCommand(@Body() body: { command: string }) {

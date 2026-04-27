@@ -281,11 +281,11 @@
                 {{ paused ? 'RESUME' : 'PAUSE' }}
             </button>
             <button class="pause-btn" (click)="showSettings = true" style="background: #24292f;">
-                ALERT SETTINGS
+                🔐 SECURITY
             </button>
-            <button class="pause-btn" (click)="showBotPanel = !showBotPanel"
-                style="background: #1a3a1a; border: 1px solid #238636; color: #3fb950;">
-                📲 BOT WA
+            <button class="pause-btn" (click)="toggleProcesses()"
+                [style]="showProcesses ? 'background:#1a1a2e; border:1px solid #a78bfa; color:#a78bfa;' : 'background:#1a1a2e; border:1px solid #30363d; color:#8b949e;'">
+                📊 HTOP {{ showProcesses ? 'ON' : 'OFF' }}
             </button>
             <button class="pause-btn" (click)="showGitActivity = !showGitActivity"
                 [style]="showGitActivity ? 'background:#1a2a3a; border:1px solid #58a6ff; color:#58a6ff;' : 'background:#1a2a3a; border:1px solid #30363d; color:#8b949e;'">
@@ -296,25 +296,6 @@
             </button>
         </div>
     </header>
-
-    <!-- WhatsApp Bot Panel -->
-    <div class="bot-panel" *ngIf="showBotPanel">
-        <div class="bot-panel-header">
-            <span>📲 NexPulse Bot — WhatsApp</span>
-            <button (click)="showBotPanel = false" class="bot-close">✕</button>
-        </div>
-        <p class="bot-panel-desc">
-            Enviá un comando al bot y te responde por WhatsApp al <strong>+549 261 655 7673</strong>
-        </p>
-        <div class="bot-commands">
-            <button class="bot-cmd-btn" (click)="sendBotCommand('hola')">👋 Menú</button>
-            <button class="bot-cmd-btn" (click)="sendBotCommand('1')">🖥️ Sistema</button>
-            <button class="bot-cmd-btn" (click)="sendBotCommand('2')">🐳 Stacks</button>
-            <button class="bot-cmd-btn" (click)="sendBotCommand('3')">✨ Optimize</button>
-            <button class="bot-cmd-btn" (click)="sendBotCommand('4')">📊 Capacidad</button>
-        </div>
-        <div class="bot-status" *ngIf="statusMessage">{{ statusMessage }}</div>
-    </div>
 
     <div class="dashboard-grid">
         <div class="card">
@@ -329,15 +310,71 @@
         </div>
 
         <div class="card">
-            <div class="card-title">RAM USAGE ({{ system?.memory?.used }} / {{ system?.memory?.total }})</div>
+            <div class="card-title">RAM USAGE</div>
             <div class="card-value">{{ system?.memory?.percent }}%</div>
+            <div style="font-size: 0.75rem; color: var(--secondary-text); margin-top: 0.3rem;">
+                {{ system?.memory?.used }} / {{ system?.memory?.total }}
+            </div>
             <div class="chart-container">
                 <canvas #memChart></canvas>
             </div>
         </div>
 
+        <!-- Memory Details card -->
+        <div class="card mem-details-card">
+            <div class="card-title">MEMORY DETAILS</div>
+            <div class="mem-detail-grid">
+                <div class="mem-detail-row">
+                    <span class="mem-label">🟢 Used</span>
+                    <div class="mem-bar-wrap">
+                        <div class="mem-bar used" [style.width.%]="system?.memory?.percentRaw || 0"></div>
+                    </div>
+                    <span class="mem-value">{{ system?.memory?.used }}</span>
+                </div>
+                <div class="mem-detail-row">
+                    <span class="mem-label">🔵 Available</span>
+                    <div class="mem-bar-wrap">
+                        <div class="mem-bar available" [style.width.%]="100 - (system?.memory?.percentRaw || 0)"></div>
+                    </div>
+                    <span class="mem-value">{{ system?.memory?.available }}</span>
+                </div>
+                <div class="mem-detail-row" *ngIf="system?.memory?.cached">
+                    <span class="mem-label">🟡 Cache</span>
+                    <div class="mem-bar-wrap">
+                        <div class="mem-bar cached" [style.width.%]="getCachePercent()"></div>
+                    </div>
+                    <span class="mem-value">{{ system?.memory?.cached }}</span>
+                </div>
+                <div class="mem-detail-row" *ngIf="system?.memory?.buffers">
+                    <span class="mem-label">🟠 Buffers</span>
+                    <div class="mem-bar-wrap">
+                        <div class="mem-bar buffers" [style.width.%]="getBufferPercent()"></div>
+                    </div>
+                    <span class="mem-value">{{ system?.memory?.buffers }}</span>
+                </div>
+                <div class="mem-detail-row">
+                    <span class="mem-label">⚪ Free</span>
+                    <div class="mem-bar-wrap">
+                        <div class="mem-bar free" [style.width.%]="getFreePercent()"></div>
+                    </div>
+                    <span class="mem-value">{{ system?.memory?.free }}</span>
+                </div>
+                <div class="mem-detail-row" *ngIf="system?.memory?.swap">
+                    <span class="mem-label">💾 Swap</span>
+                    <div class="mem-bar-wrap">
+                        <div class="mem-bar swap" style="width: 100%;"></div>
+                    </div>
+                    <span class="mem-value" style="font-size:0.7rem;">{{ system?.memory?.swap }}</span>
+                </div>
+            </div>
+            <div style="margin-top: 1rem; font-size: 0.7rem; color: var(--secondary-text);">
+                Total: <strong style="color: var(--text-color);">{{ system?.memory?.total }}</strong>
+            </div>
+        </div>
+
         <div class="card" *ngFor="let disk of system?.disk">
             <div class="card-title">DISK: {{ disk.fs }}</div>
+            <div style="font-size: 0.65rem; color: var(--secondary-text); margin-bottom: 0.3rem;">{{ disk.mount }}</div>
             <div class="card-value">{{ disk.use }}%</div>
             <div style="color: var(--secondary-text); font-size: 0.8rem; margin-top: 0.5rem;">
                 Used: {{ disk.used }} / {{ disk.size }}
@@ -362,6 +399,77 @@
 
     <!-- Git/DevOps Activity Module -->
     <app-git-dashboard *ngIf="showGitActivity"></app-git-dashboard>
+
+    <!-- ── PROCESSES PANEL (htop-like) ─────────────────────────────── -->
+    <div class="card processes-panel" *ngIf="showProcesses" style="margin-bottom: 2rem;">
+        <div class="card-header-actions">
+            <div>
+                <div class="card-title">📊 HOST PROCESSES</div>
+                <div style="font-size: 0.72rem; color: var(--secondary-text); margin-top: 0.2rem;">
+                    Total: <strong style="color:var(--text-color);">{{ processes?.total }}</strong> &nbsp;
+                    Running: <strong style="color:#3fb950;">{{ processes?.running }}</strong> &nbsp;
+                    Sleeping: <strong style="color:#8b949e;">{{ processes?.sleeping }}</strong>
+                </div>
+            </div>
+            <div style="display:flex; gap:0.6rem; align-items:center;">
+                <button class="proc-tab-btn" [class.active]="procTab==='cpu'" (click)="procTab='cpu'">By CPU</button>
+                <button class="proc-tab-btn" [class.active]="procTab==='mem'" (click)="procTab='mem'">By RAM</button>
+                <button class="pause-btn" (click)="fetchProcesses()" style="font-size:0.7rem; padding: 0.3rem 0.8rem;">
+                    🔄 Refresh
+                </button>
+            </div>
+        </div>
+
+        <div style="overflow-x:auto; margin-top:0.8rem;">
+            <table class="docker-table proc-table">
+                <thead>
+                    <tr>
+                        <th style="width:55px;">PID</th>
+                        <th>NAME</th>
+                        <th>USER</th>
+                        <th style="width:70px;">🧠 CPU%</th>
+                        <th style="width:70px;">💾 RAM%</th>
+                        <th style="width:70px;">RSS</th>
+                        <th style="width:50px;">STATE</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr *ngFor="let p of (procTab === 'cpu' ? processes?.byCpu : processes?.byMem); let i = index"
+                        [class.proc-row-hot]="procTab==='cpu' ? +p.cpu > 10 : +p.mem > 5">
+                        <td style="color:var(--secondary-text); font-size:0.75rem;">{{ p.pid }}</td>
+                        <td>
+                            <div style="font-weight:600; font-size:0.85rem;">{{ p.name }}</div>
+                            <div style="font-size:0.65rem; color:var(--secondary-text); max-width:300px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;"
+                                title="{{ p.command }}">{{ p.command }}</div>
+                        </td>
+                        <td style="font-size:0.75rem; color:var(--secondary-text);">{{ p.user }}</td>
+                        <td>
+                            <div class="proc-bar-wrap">
+                                <div class="proc-bar cpu-bar" [style.width.%]="Math.min(+p.cpu * 3, 100)"></div>
+                            </div>
+                            <span style="font-size:0.78rem; font-weight:700;" [style.color]="+p.cpu > 20 ? '#f85149' : +p.cpu > 5 ? '#d29922' : '#3fb950'">{{ p.cpu }}%</span>
+                        </td>
+                        <td>
+                            <div class="proc-bar-wrap">
+                                <div class="proc-bar mem-bar" [style.width.%]="Math.min(+p.mem * 5, 100)"></div>
+                            </div>
+                            <span style="font-size:0.78rem; font-weight:700;" [style.color]="+p.mem > 10 ? '#f85149' : +p.mem > 3 ? '#d29922' : '#58a6ff'">{{ p.mem }}%</span>
+                        </td>
+                        <td style="font-size:0.75rem; color:var(--secondary-text);">{{ p.memBytes }}</td>
+                        <td>
+                            <span class="proc-state"
+                                [style.color]="p.state==='R' ? '#3fb950' : p.state==='S' ? '#58a6ff' : '#d29922'">{{ p.state }}</span>
+                        </td>
+                    </tr>
+                    <tr *ngIf="!processes?.byCpu?.length">
+                        <td colspan="7" style="text-align:center; padding:2rem; color:var(--secondary-text);">
+                            Cargando procesos... (requiere acceso a /proc del host)
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
 
     <div class="card">
         <div class="card-header-actions">
@@ -568,86 +676,53 @@
     <div class="modal-overlay" *ngIf="showSettings" (click)="showSettings = false">
         <div class="modal" (click)="$event.stopPropagation()">
             <div class="modal-header">
-                <h3>WHATSAPP ALERTS (CallMeBot)</h3>
+                <h3>🔐 SEGURIDAD & 2FA</h3>
                 <button class="close-btn" (click)="showSettings = false">&times;</button>
             </div>
             <div class="modal-body" style="background: var(--card-bg); font-family: inherit;">
-                <p style="margin-bottom: 1rem; font-size: 0.9rem;">Receive critical system alerts directly on your
-                    phone.</p>
+
+                <div style="padding: 1rem; background: rgba(88,166,255,0.05); border: 1px solid rgba(88,166,255,0.15); border-radius: 8px; margin-bottom: 1.5rem;">
+                    <p style="font-size: 0.85rem; color: var(--secondary-text); line-height: 1.5;">
+                        Configurá la autenticación de dos factores (2FA) para proteger el acceso al panel.
+                        Las alertas automáticas de CPU/RAM/Disco se registran en los <strong>logs del servidor</strong>.
+                    </p>
+                </div>
+
+                <!-- Thresholds Section -->
                 <div style="margin-bottom: 1.5rem;">
-                    <h4 style="margin-bottom: 1rem; color: #25d366;">🟢 WHATSAPP (CallMeBot)</h4>
-                    <p style="font-size: 0.85rem; color: var(--text-color); margin-bottom: 0.8rem;">
-                        Configured to send alerts to: <strong>5492616557673</strong>
-                    </p>
-                    <button (click)="testWhatsApp()" class="pause-btn"
-                        style="width: 100%; height: 45px; background: #25d366; color: black; border: none; font-size: 1rem; font-weight: bold;">
-                        TEST WHATSAPP TO MY PHONE
+                    <h3 style="font-size: 1rem; margin-bottom: 1rem; color: #d29922;">⚙️ UMBRALES DE ALERTA</h3>
+                    <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+                        <div>
+                            <label style="display:block; margin-bottom:0.4rem; font-size:0.72rem; color:var(--secondary-text); font-weight:600;">🧠 CPU ALERT %</label>
+                            <input type="number" [(ngModel)]="thresholdCpu" min="10" max="100" class="search-input"
+                                style="width:100%; border:1px solid #30363d; text-align:center; font-size:1.1rem; font-weight:700; color:#f85149;">
+                        </div>
+                        <div>
+                            <label style="display:block; margin-bottom:0.4rem; font-size:0.72rem; color:var(--secondary-text); font-weight:600;">💾 RAM ALERT %</label>
+                            <input type="number" [(ngModel)]="thresholdRam" min="10" max="100" class="search-input"
+                                style="width:100%; border:1px solid #30363d; text-align:center; font-size:1.1rem; font-weight:700; color:#d29922;">
+                        </div>
+                        <div>
+                            <label style="display:block; margin-bottom:0.4rem; font-size:0.72rem; color:var(--secondary-text); font-weight:600;">📀 DISK ALERT %</label>
+                            <input type="number" [(ngModel)]="thresholdDisk" min="10" max="100" class="search-input"
+                                style="width:100%; border:1px solid #30363d; text-align:center; font-size:1.1rem; font-weight:700; color:#58a6ff;">
+                        </div>
+                    </div>
+                    <button (click)="saveThresholds()" class="pause-btn"
+                        style="width:100%; background: #1a2a1a; border:1px solid #d29922; color:#d29922; padding: 0.6rem;">
+                        💾 GUARDAR UMBRALES
                     </button>
-
-                    <div
-                        style="margin-top: 1rem; background: rgba(37, 211, 102, 0.05); border: 1px dashed rgba(37, 211, 102, 0.3); padding: 0.8rem; border-radius: 8px;">
-                        <span
-                            style="font-size: 0.75rem; color: #25d366; font-weight: bold; display: block; margin-bottom: 0.3rem;">INTERACTIVE
-                            WEBHOOK (CALLMEBOT)</span>
-                        <code
-                            style="font-size: 0.7rem; color: var(--secondary-text); word-break: break-all; background: #0d1117; padding: 0.4rem; display: block; border-radius: 4px;">
-                            http://{{ window.location.hostname }}:{{ window.location.port }}/api/webhook/whatsapp
-                        </code>
-                        <p
-                            style="font-size: 0.65rem; color: var(--secondary-text); margin-top: 0.5rem; line-height: 1.4;">
-                            Configura esta URL en tu panel de CallMeBot para habilitar el **Menú Interactivo**.
-                        </p>
+                    <div style="font-size:0.7rem; color:var(--secondary-text); margin-top:0.5rem; text-align:center;">
+                        El backend usa estos valores para las alertas en logs. Defecto: CPU 90% · RAM 90% · Disco 85%
                     </div>
                 </div>
 
-                <div style="margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid #30363d;">
-                    <h4 style="margin-bottom: 1rem; color: #25d366;">🟢 WHATSAPP (Personal - no group)</h4>
-                    <p style="font-size: 0.75rem; color: var(--secondary-text); margin-bottom: 0.8rem;">
-                        This will send a message directly to your phone using RapidAPI.
-                    </p>
-                    <div
-                        style="background: rgba(37, 211, 102, 0.1); padding: 0.8rem; border-radius: 6px; margin-bottom: 1rem; font-size: 0.8rem; border: 1px dashed #25d366;">
-                        <strong>One-time setup:</strong><br>
-                        1. Send <code>signup</code> to Whin bot WhatsApp: <strong>+34 603 21 52 17</strong><br>
-                        2. Once registered, click the button below.
-                    </div>
-                    <button (click)="testWhin()" class="pause-btn"
-                        style="width: 100%; height: 45px; background: #25d366; color: black; border: none; font-size: 1rem;">
-                        TEST WHATSAPP TO MY PHONE
-                    </button>
-                </div>
-
-                <div style="margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid #30363d;">
-                    <h4 style="margin-bottom: 1rem; color: #0088cc;">🔵 TELEGRAM BOT</h4>
-                    <div style="margin-bottom: 1rem;">
-                        <label style="display: block; margin-bottom: 0.5rem; color: var(--secondary-text);">Bot
-                            Token</label>
-                        <input type="text" [(ngModel)]="tgToken" placeholder="123456:ABC-DEF..." class="search-input"
-                            style="width: 100%; border: 1px solid #30363d;">
-                    </div>
-                    <div style="margin-bottom: 1rem;">
-                        <label style="display: block; margin-bottom: 0.5rem; color: var(--secondary-text);">Chat
-                            ID</label>
-                        <input type="text" [(ngModel)]="tgChatId" placeholder="987654321" class="search-input"
-                            style="width: 100%; border: 1px solid #30363d;">
-                        <small style="color: var(--secondary-text); display: block; margin-top: 0.3rem;">
-                            Tip: Send /id to <span style="color: var(--accent-color); cursor: pointer;"
-                                (click)="openLink('https://t.me/userinfobot')">&#64;userinfobot</span> to get your Chat
-                            ID.
-                        </small>
-                    </div>
-                    <button (click)="testTelegram()" class="pause-btn"
-                        style="width: 100%; margin-top: 1rem; background: #0088cc; color: white; border: none;">
-                        TEST TELEGRAM
-                    </button>
-                </div>
-
-                <div style="margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid #30363d;">
+                <div>
                     <h3 style="font-size: 1rem; margin-bottom: 1rem; color: #6f42c1;">🔐 GOOGLE AUTHENTICATOR (2FA)</h3>
 
                     <div *ngIf="!is2FAEnabled && !show2FASetup">
                         <p style="font-size: 0.8rem; color: var(--secondary-text); margin-bottom: 1rem;">
-                            Refuerza la seguridad de tu PC permitiendo solo el acceso con código TOTP.
+                            Refuerza la seguridad de tu panel permitiendo solo el acceso con código TOTP.
                         </p>
                         <button (click)="start2FASetup()" class="pause-btn"
                             style="width: 100%; background: #6f42c1; color: white;">
@@ -679,6 +754,29 @@
                         </button>
                     </div>
                 </div>
+
+                <!-- Biometric section -->
+                <div style="margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid #30363d;">
+                    <h3 style="font-size: 1rem; margin-bottom: 0.8rem; color: #58a6ff;">🔏 BIOMETRÍA (WebAuthn)</h3>
+                    <div *ngIf="isBiometricLinked"
+                        style="display: flex; justify-content: space-between; align-items: center; background: rgba(88,166,255,0.08); padding: 1rem; border-radius: 8px; border: 1px solid rgba(88,166,255,0.3);">
+                        <span style="color: #58a6ff; font-weight: bold; font-size: 0.9rem;">✅ HUELLA/FACE ID VINCULADO</span>
+                        <button (click)="unlinkBiometrics()"
+                            style="background: none; border: none; color: var(--danger); cursor: pointer; font-size: 0.75rem; text-decoration: underline;">
+                            Desvincular
+                        </button>
+                    </div>
+                    <div *ngIf="!isBiometricLinked">
+                        <p style="font-size: 0.8rem; color: var(--secondary-text); margin-bottom: 1rem;">
+                            Vinculá tu huella o Face ID para acceder sin contraseña.
+                        </p>
+                        <button (click)="activateBiometrics()" class="pause-btn"
+                            style="width: 100%; background: #1a2a3a; border: 1px solid #58a6ff; color: #58a6ff;">
+                            🔏 VINCULAR BIOMETRÍA
+                        </button>
+                    </div>
+                </div>
+
             </div>
         </div>
     </div>

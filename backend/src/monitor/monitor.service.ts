@@ -16,10 +16,12 @@ export class MonitorService implements OnModuleInit {
     private diskAlertSent = false;
     private idleTracker: Map<string, number> = new Map();
 
-    // ── Cache layer (reduces CPU/RAM load significantly) ──────────────────
+    // ── Cache layer (reduces CPU/RAM load significantly) ──────────────────────
     private sysStatsCache: { data: any; ts: number } | null = null;
     private dockerStatsCache: { data: any; ts: number } | null = null;
-    private readonly CACHE_TTL_MS = 8000; // 8 seconds
+    private processesCache: { data: any; ts: number } | null = null;
+    private readonly CACHE_TTL_MS = 8000;   // 8 seconds
+    private readonly PROC_CACHE_TTL = 5000; // 5 seconds for processes
 
     private isProtected(name: string): boolean {
         const n = name.toLowerCase().replace('/', '');
@@ -56,11 +58,13 @@ export class MonitorService implements OnModuleInit {
 
     async checkAutomations() {
         try {
+            const thresholds = this.getThresholds();
+
             // Check for new containers (stacks)
             const containers = await this.docker.listContainers({ all: true });
             if (this.lastContainerCount > 0 && containers.length > this.lastContainerCount) {
                 const newCount = containers.length - this.lastContainerCount;
-                await this.sendWhatsApp(`🚀 ¡Alerta! Se han detectado ${newCount} nuevos contenedores/stacks. Total actual: ${containers.length}`);
+                console.log(`[NexPulse] 🚀 Alerta: ${newCount} nuevos contenedores detectados. Total: ${containers.length}`);
             }
             this.lastContainerCount = containers.length;
 
@@ -69,26 +73,37 @@ export class MonitorService implements OnModuleInit {
             const cpuUsage = parseFloat(stats.cpu);
             const ramUsage = parseFloat(stats.memory.percent);
 
-            // CPU Alert (Threshold 90%)
-            if (cpuUsage > 90 && !this.cpuAlertSent) {
-                await this.sendWhatsApp(`⚠️ ¡CRÍTICO! El uso de CPU ha superado el 90% (${cpuUsage}%).`);
+            // CPU Alert — log only
+            if (cpuUsage > thresholds.cpuAlert && !this.cpuAlertSent) {
+                console.warn(`[NexPulse] ⚠️ CPU CRÍTICO: ${cpuUsage}% (umbral: ${thresholds.cpuAlert}%)`);
                 this.cpuAlertSent = true;
-            } else if (cpuUsage < 80 && this.cpuAlertSent) {
-                await this.sendWhatsApp(`✅ Info: El uso de CPU se ha normalizado (${cpuUsage}%).`);
+            } else if (cpuUsage < (thresholds.cpuAlert - 10) && this.cpuAlertSent) {
+                console.log(`[NexPulse] ✅ CPU normalizado: ${cpuUsage}%`);
                 this.cpuAlertSent = false;
             }
 
-            // RAM Alert (Threshold 90%)
-            if (ramUsage > 90 && !this.ramAlertSent) {
-                await this.sendWhatsApp(`🔥 ¡CRÍTICO! El uso de RAM ha superado el 90% (${ramUsage}%).`);
+            // RAM Alert — log only
+            if (ramUsage > thresholds.ramAlert && !this.ramAlertSent) {
+                console.warn(`[NexPulse] 🔥 RAM CRÍTICA: ${ramUsage}% (umbral: ${thresholds.ramAlert}%)`);
                 this.ramAlertSent = true;
-            } else if (ramUsage < 80 && this.ramAlertSent) {
-                await this.sendWhatsApp(`✅ Info: El uso de RAM se ha normalizado (${ramUsage}%).`);
+            } else if (ramUsage < (thresholds.ramAlert - 10) && this.ramAlertSent) {
+                console.log(`[NexPulse] ✅ RAM normalizada: ${ramUsage}%`);
                 this.ramAlertSent = false;
             }
 
+            // Disk Alert — log only
+            if (stats.disk && stats.disk.length > 0) {
+                const diskUse = parseFloat(stats.disk[0].use);
+                if (diskUse > thresholds.diskAlert && !this.diskAlertSent) {
+                    console.warn(`[NexPulse] 💾 DISCO CRÍTICO: ${diskUse}% (umbral: ${thresholds.diskAlert}%)`);
+                    this.diskAlertSent = true;
+                } else if (diskUse < (thresholds.diskAlert - 5) && this.diskAlertSent) {
+                    console.log(`[NexPulse] ✅ Disco normalizado: ${diskUse}%`);
+                    this.diskAlertSent = false;
+                }
+            }
+
             if (ramUsage > 85) {
-                // If system RAM is tight, be more aggressive with auto-optimization
                 await this.autoOptimizeRAM(true);
             } else {
                 await this.autoOptimizeRAM(false);
@@ -183,41 +198,167 @@ export class MonitorService implements OnModuleInit {
             si.cpu(),
         ]);
 
+        // Detect platform family for display purposes
+        const platform = process.platform;
+        let osDisplay = `${os.distro || ''} ${os.release || ''}`.trim();
+        if (!osDisplay || osDisplay === ' ') {
+            // Fallback for minimal containers without full OS detection
+            if (platform === 'linux') osDisplay = `Linux ${os.kernel || ''}`;
+            else if (platform === 'win32') osDisplay = `Windows ${os.release || ''}`;
+            else if (platform === 'darwin') osDisplay = `macOS ${os.release || ''}`;
+            else osDisplay = `${platform} ${os.release || ''}`;
+        }
+
+        // Memory breakdown (in GB)
+        const toGB = (bytes: number) => (bytes / 1024 / 1024 / 1024).toFixed(2) + ' GB';
+        const toMB = (bytes: number) => (bytes / 1024 / 1024).toFixed(0) + ' MB';
+
+        // Swap info (available on Linux/macOS, 0 on Windows)
+        const swapTotal = (mem as any).swaptotal ?? 0;
+        const swapUsed = (mem as any).swapused ?? 0;
+
+        // Cache/Buffer: systeminformation exposes these on Linux.
+        // On Windows/Alpine they may be 0 — report what's available.
+        const memBuffers = (mem as any).buffers ?? 0;
+        const memCached = (mem as any).cached ?? 0;
+        const memSlab = (mem as any).slab ?? 0;
+        const totalCached = memCached + memSlab; // Total reclaimable cache
+
         const result = {
             hostname: os.hostname,
-            os: `${os.distro} ${os.release}`,
-            kernel: os.kernel,
-            arch: os.arch,
-            cpuModel: `${cpuInfo.manufacturer} ${cpuInfo.brand}`,
+            os: osDisplay,
+            platform: platform,
+            kernel: os.kernel || 'N/A',
+            arch: os.arch || process.arch,
+            cpuModel: `${cpuInfo.manufacturer} ${cpuInfo.brand}`.trim() || 'Unknown CPU',
             cpuCores: cpuInfo.cores,
-            cpuSpeed: cpuInfo.speed + 'GHz',
+            cpuSpeed: cpuInfo.speed ? cpuInfo.speed + 'GHz' : 'N/A',
             cpu: cpu.currentLoad.toFixed(2),
             memory: {
-                total: (mem.total / 1024 / 1024 / 1024).toFixed(2) + ' GB',
-                used: (mem.used / 1024 / 1024 / 1024).toFixed(2) + ' GB',
-                available: (mem.available / 1024 / 1024 / 1024).toFixed(2) + ' GB',
-                free: (mem.free / 1024 / 1024 / 1024).toFixed(2) + ' GB',
+                total: toGB(mem.total),
+                used: toGB(mem.used),
+                available: toGB(mem.available),
+                free: toGB(mem.free),
+                cached: totalCached > 0 ? toMB(totalCached) : null,
+                buffers: memBuffers > 0 ? toMB(memBuffers) : null,
+                swap: swapTotal > 0 ? `${toMB(swapUsed)} / ${toMB(swapTotal)}` : null,
                 percent: ((mem.used / mem.total) * 100).toFixed(2),
+                percentRaw: parseFloat(((mem.used / mem.total) * 100).toFixed(2)),
+                totalRaw: mem.total,
+                usedRaw: mem.used,
+                availableRaw: mem.available,
             },
             disk: fsData
-                .filter(d => !d.fs.includes('loop') && !d.fs.includes('tmpfs'))
-                .slice(0, 1)
+                .filter(d => !d.fs.includes('loop') && !d.fs.includes('tmpfs') && d.size > 0)
+                .slice(0, 3) // Show up to 3 disks
                 .map(d => ({
                     fs: d.fs,
-                    size: (d.size / 1024 / 1024 / 1024).toFixed(2) + ' GB',
-                    used: (d.used / 1024 / 1024 / 1024).toFixed(2) + ' GB',
+                    mount: d.mount || '/',
+                    size: toGB(d.size),
+                    used: toGB(d.used),
                     use: d.use.toFixed(2),
                 })),
-            network: net.map(n => ({
-                iface: n.iface,
-                rx: (n.rx_sec / 1024).toFixed(2) + ' KB/s',
-                tx: (n.tx_sec / 1024).toFixed(2) + ' KB/s',
-            })),
+            network: net
+                .filter(n => n.iface && !n.iface.startsWith('lo')) // Exclude loopback
+                .map(n => ({
+                    iface: n.iface,
+                    rx: (n.rx_sec / 1024).toFixed(2) + ' KB/s',
+                    tx: (n.tx_sec / 1024).toFixed(2) + ' KB/s',
+                })),
             uptime: this.formatUptime(time.uptime),
         };
 
         this.sysStatsCache = { data: result, ts: now };
         return result;
+    }
+
+    // ─── Top Processes (htop-like) ────────────────────────────────────────────
+    async getTopProcesses() {
+        const now = Date.now();
+        if (this.processesCache && (now - this.processesCache.ts) < this.PROC_CACHE_TTL) {
+            return this.processesCache.data;
+        }
+
+        try {
+            const data = await si.processes();
+            const list = data.list || [];
+
+            // Top 10 by CPU
+            const byCpu = [...list]
+                .filter(p => p.pid > 0)
+                .sort((a, b) => b.pcpu - a.pcpu)
+                .slice(0, 12)
+                .map(p => ({
+                    pid: p.pid,
+                    name: p.name || 'unknown',
+                    command: (p.command || p.name || '').substring(0, 60),
+                    cpu: p.pcpu.toFixed(1),
+                    mem: p.pmem.toFixed(1),
+                    memBytes: p.mem_rss ? (p.mem_rss / 1024).toFixed(0) + ' MB' : '—',
+                    user: p.user || '—',
+                    state: p.state || '?',
+                }));
+
+            // Top 10 by MEM
+            const byMem = [...list]
+                .filter(p => p.pid > 0)
+                .sort((a, b) => b.pmem - a.pmem)
+                .slice(0, 12)
+                .map(p => ({
+                    pid: p.pid,
+                    name: p.name || 'unknown',
+                    command: (p.command || p.name || '').substring(0, 60),
+                    cpu: p.pcpu.toFixed(1),
+                    mem: p.pmem.toFixed(1),
+                    memBytes: p.mem_rss ? (p.mem_rss / 1024).toFixed(0) + ' MB' : '—',
+                    user: p.user || '—',
+                    state: p.state || '?',
+                }));
+
+            const result = {
+                total: data.all,
+                running: data.running,
+                sleeping: data.sleeping,
+                byCpu,
+                byMem,
+            };
+
+            this.processesCache = { data: result, ts: now };
+            return result;
+        } catch (e: any) {
+            console.error('[Processes] Error:', e.message);
+            return { total: 0, running: 0, sleeping: 0, byCpu: [], byMem: [], error: e.message };
+        }
+    }
+
+    // ─── Alert Thresholds ─────────────────────────────────────────────────────
+    getThresholds(): { cpuAlert: number; ramAlert: number; diskAlert: number } {
+        const defaults = { cpuAlert: 90, ramAlert: 90, diskAlert: 85 };
+        try {
+            if (!fs.existsSync(this.CONFIG_PATH)) return defaults;
+            const config = JSON.parse(fs.readFileSync(this.CONFIG_PATH, 'utf8'));
+            return {
+                cpuAlert:  typeof config.cpuAlert  === 'number' ? config.cpuAlert  : defaults.cpuAlert,
+                ramAlert:  typeof config.ramAlert  === 'number' ? config.ramAlert  : defaults.ramAlert,
+                diskAlert: typeof config.diskAlert === 'number' ? config.diskAlert : defaults.diskAlert,
+            };
+        } catch { return defaults; }
+    }
+
+    saveThresholds(cpuAlert: number, ramAlert: number, diskAlert: number) {
+        try {
+            let config: any = {};
+            if (fs.existsSync(this.CONFIG_PATH)) {
+                config = JSON.parse(fs.readFileSync(this.CONFIG_PATH, 'utf8'));
+            }
+            config.cpuAlert  = Math.min(Math.max(cpuAlert,  1), 100);
+            config.ramAlert  = Math.min(Math.max(ramAlert,  1), 100);
+            config.diskAlert = Math.min(Math.max(diskAlert, 1), 100);
+            fs.writeFileSync(this.CONFIG_PATH, JSON.stringify(config, null, 2));
+            return { success: true, thresholds: this.getThresholds() };
+        } catch (e: any) {
+            return { success: false, message: e.message };
+        }
     }
 
     async optimizeSystem() {
