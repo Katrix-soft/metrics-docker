@@ -45,6 +45,12 @@ export class AppComponent implements OnInit, OnDestroy, AfterViewInit {
     selectedMemory = 128;
     selectedCpu = 50;
 
+    // ── History & Trends (Grafana-lite) ──────────────────────────────────
+    showHistory = false;
+    historyData: any[] = [];
+    dailyAverages: any[] = [];
+    historyLimit = 1440; // 24h if 1min snapshots
+
     // Custom Confirm Modal
     showConfirm = false;
     confirmTitle = '';
@@ -56,6 +62,9 @@ export class AppComponent implements OnInit, OnDestroy, AfterViewInit {
     // WhatsApp settings
     waPhone = '';
     waApiKey = '';
+
+    // Discord settings
+    discordWebhook = '';
 
     // Telegram settings
     tgToken = '';
@@ -400,6 +409,30 @@ export class AppComponent implements OnInit, OnDestroy, AfterViewInit {
         });
         this.http.get('/api/docker').subscribe((data: any) => {
             this.docker = Array.isArray(data) ? data : [];
+        });
+
+        if (this.showHistory) {
+            this.fetchHistory();
+        }
+    }
+
+    toggleHistory() {
+        this.showHistory = !this.showHistory;
+        if (this.showHistory) {
+            this.fetchHistory();
+            this.fetchDaily();
+        }
+    }
+
+    fetchHistory() {
+        this.http.get(`/api/system/history?limit=${this.historyLimit}`).subscribe((data: any) => {
+            this.historyData = data;
+        });
+    }
+
+    fetchDaily() {
+        this.http.get('/api/system/daily').subscribe((data: any) => {
+            this.dailyAverages = data;
         });
     }
 
@@ -843,6 +876,9 @@ export class AppComponent implements OnInit, OnDestroy, AfterViewInit {
                 this.thresholdCpu  = t.cpuAlert  ?? 90;
                 this.thresholdRam  = t.ramAlert  ?? 90;
                 this.thresholdDisk = t.diskAlert ?? 85;
+                this.discordWebhook = t.discordWebhook || '';
+                this.tgToken = t.tgToken || '';
+                this.tgChatId = t.tgChatId || '';
             },
             error: () => {} // keep defaults
         });
@@ -854,6 +890,9 @@ export class AppComponent implements OnInit, OnDestroy, AfterViewInit {
             cpuAlert:  this.thresholdCpu,
             ramAlert:  this.thresholdRam,
             diskAlert: this.thresholdDisk,
+            discordWebhook: this.discordWebhook,
+            tgToken: this.tgToken,
+            tgChatId: this.tgChatId
         }).subscribe({
             next: (res: any) => {
                 if (res.success) {

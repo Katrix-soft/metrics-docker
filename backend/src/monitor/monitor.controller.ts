@@ -1,13 +1,27 @@
 import { Controller, Get, Post, Param, Body, All, Query } from '@nestjs/common';
 import { MonitorService } from './monitor.service';
+import { HistoryService } from './history.service';
 
 @Controller('api')
 export class MonitorController {
-    constructor(private readonly monitorService: MonitorService) { }
+    constructor(
+        private readonly monitorService: MonitorService,
+        private readonly historyService: HistoryService
+    ) { }
 
     @Get('system')
     async getSystem() {
         return this.monitorService.getSystemStats();
+    }
+
+    @Get('system/history')
+    async getHistory(@Query('limit') limit: string) {
+        return this.historyService.getHistory(Number(limit) || 1440);
+    }
+
+    @Get('system/daily')
+    async getDaily() {
+        return this.historyService.getDailyAverages();
     }
 
     @Get('docker')
@@ -144,12 +158,8 @@ export class MonitorController {
     }
 
     @Post('thresholds')
-    async saveThresholds(@Body() body: { cpuAlert: number; ramAlert: number; diskAlert: number }) {
-        return this.monitorService.saveThresholds(
-            Number(body.cpuAlert),
-            Number(body.ramAlert),
-            Number(body.diskAlert),
-        );
+    async saveThresholds(@Body() body: any) {
+        return this.monitorService.saveThresholds(body);
     }
 
     // Manual bot command trigger (for testing or UI-triggered commands)

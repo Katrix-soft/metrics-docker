@@ -17,7 +17,8 @@
 - **⎇ Integración Git:** Estado de sincronización de repositorios de la organización GitHub.
 - **🚀 One-Click Deploy:** Gatilla webhooks de Portainer para despliegues instantáneos.
 - **🔥 Force Clean Redeploy:** Solución automatizada para "container name conflict" limpiando volúmenes y recreando stacks.
-- **🤖 RAM Optimizer:** Analizador inteligente que hiberna contenedores inactivos para liberar memoria.
+- **📈 Historical Trends:** Módulo de series temporales (Grafana-lite) con persistencia en SQLite para análisis de rendimiento de las últimas 24h.
+- **📢 Alertas Multi-canal:** Notificaciones instantáneas vía WhatsApp (CallMeBot/Whin), Discord (Webhooks) y Telegram (Bots) configurables desde el panel.
 - **🔐 Seguridad Multi-factor:** TOTP (Google Authenticator) y Biometría (FIDO2/WebAuthn).
 - **💎 Design System:** Interfaz premium con glassmorphism y micro-animaciones (Sapphire & Champagne Gold).
 
@@ -47,9 +48,10 @@ katrix-monitor-lite/
 
 ### Lógica de Operación
 1. **Comunicación:** El frontend se conecta vía **WebSockets (Socket.io)** para recibir métricas cada segundo y estados de deploy.
-2. **Dockerode:** El backend interactúa directamente con el socket de Docker del host (`/var/run/docker.sock`).
-3. **Host OS Detection:** El backend utiliza `docker.info()` para consultar la información del host directamente al motor Docker, garantizando que el dashboard muestre "Ubuntu 22.04" en lugar de la distro del contenedor.
-4. **Friendly Names:** Se extraen los nombres de los servicios usando las etiquetas `com.docker.compose.service` y `easypanel.service.name` para evitar mostrar IDs internos de Docker.
+2. **Historian (Grafana-lite):** Los datos se persisten cada 90 segundos en una base de datos **SQLite** local (`metrics.db`). El backend realiza promedios horarios y limpieza automática cada 7 días para no saturar el disco.
+3. **Dockerode:** El backend interactúa directamente con el socket de Docker del host (`/var/run/docker.sock`).
+4. **Host OS Detection:** El backend utiliza `docker.info()` para consultar la información del host directamente al motor Docker, garantizando que el dashboard muestre "Ubuntu 22.04" en lugar de la distro del contenedor.
+5. **Friendly Names:** Se extraen los nombres de los servicios usando las etiquetas `com.docker.compose.service` y `easypanel.service.name` para evitar mostrar IDs internos de Docker.
 
 ---
 

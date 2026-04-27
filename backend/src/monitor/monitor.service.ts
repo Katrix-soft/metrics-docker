@@ -6,6 +6,8 @@ import * as qrcode from 'qrcode';
 import * as fs from 'fs';
 import * as path from 'path';
 
+import { HistoryService } from './history.service';
+
 @Injectable()
 export class MonitorService implements OnModuleInit {
     private readonly CONFIG_PATH = path.join(process.cwd(), 'katrix-config.json');
@@ -38,7 +40,7 @@ export class MonitorService implements OnModuleInit {
         );
     }
 
-    constructor() {
+    constructor(private historyService: HistoryService) {
         const isWindows = process.platform === 'win32';
         const socketPath = isWindows ? '//./pipe/docker_engine' : '/var/run/docker.sock';
         this.docker = new Docker({ socketPath });
@@ -72,33 +74,49 @@ export class MonitorService implements OnModuleInit {
             const stats = await this.getSystemStats();
             const cpuUsage = parseFloat(stats.cpu);
             const ramUsage = parseFloat(stats.memory.percent);
+            const diskUse = stats.disk && stats.disk.length > 0 ? parseFloat(stats.disk[0].use) : 0;
 
-            // CPU Alert — log only
+            // Save history snapshot
+            this.historyService.saveSnapshot(cpuUsage, ramUsage, diskUse);
+
+            // CPU Alert
             if (cpuUsage > thresholds.cpuAlert && !this.cpuAlertSent) {
-                console.warn(`[NexPulse] ⚠️ CPU CRÍTICO: ${cpuUsage}% (umbral: ${thresholds.cpuAlert}%)`);
+                const msg = `⚠️ [${stats.hostname}] CPU CRÍTICO: ${cpuUsage}% (Umbral: ${thresholds.cpuAlert}%)`;
+                console.warn(msg);
+                this.notifyAll(msg);
                 this.cpuAlertSent = true;
             } else if (cpuUsage < (thresholds.cpuAlert - 10) && this.cpuAlertSent) {
-                console.log(`[NexPulse] ✅ CPU normalizado: ${cpuUsage}%`);
+                const msg = `✅ [${stats.hostname}] CPU Normalizado: ${cpuUsage}%`;
+                console.log(msg);
+                this.notifyAll(msg);
                 this.cpuAlertSent = false;
             }
 
-            // RAM Alert — log only
+            // RAM Alert
             if (ramUsage > thresholds.ramAlert && !this.ramAlertSent) {
-                console.warn(`[NexPulse] 🔥 RAM CRÍTICA: ${ramUsage}% (umbral: ${thresholds.ramAlert}%)`);
+                const msg = `🔥 [${stats.hostname}] RAM CRÍTICA: ${ramUsage}% (Umbral: ${thresholds.ramAlert}%)`;
+                console.warn(msg);
+                this.notifyAll(msg);
                 this.ramAlertSent = true;
             } else if (ramUsage < (thresholds.ramAlert - 10) && this.ramAlertSent) {
-                console.log(`[NexPulse] ✅ RAM normalizada: ${ramUsage}%`);
+                const msg = `✅ [${stats.hostname}] RAM Normalizada: ${ramUsage}%`;
+                console.log(msg);
+                this.notifyAll(msg);
                 this.ramAlertSent = false;
             }
 
-            // Disk Alert — log only
+            // Disk Alert
             if (stats.disk && stats.disk.length > 0) {
-                const diskUse = parseFloat(stats.disk[0].use);
-                if (diskUse > thresholds.diskAlert && !this.diskAlertSent) {
-                    console.warn(`[NexPulse] 💾 DISCO CRÍTICO: ${diskUse}% (umbral: ${thresholds.diskAlert}%)`);
+                const dUse = parseFloat(stats.disk[0].use);
+                if (dUse > thresholds.diskAlert && !this.diskAlertSent) {
+                    const msg = `💾 [${stats.hostname}] DISCO CRÍTICO: ${dUse}% (Umbral: ${thresholds.diskAlert}%)`;
+                    console.warn(msg);
+                    this.notifyAll(msg);
                     this.diskAlertSent = true;
-                } else if (diskUse < (thresholds.diskAlert - 5) && this.diskAlertSent) {
-                    console.log(`[NexPulse] ✅ Disco normalizado: ${diskUse}%`);
+                } else if (dUse < (thresholds.diskAlert - 5) && this.diskAlertSent) {
+                    const msg = `✅ [${stats.hostname}] DISCO Normalizado: ${dUse}%`;
+                    console.log(msg);
+                    this.notifyAll(msg);
                     this.diskAlertSent = false;
                 }
             }
@@ -362,8 +380,15 @@ export class MonitorService implements OnModuleInit {
         }
     }
 
-    // ─── Alert Thresholds ─────────────────────────────────────────────────────
-    getThresholds(): { cpuAlert: number; ramAlert: number; diskAlert: number } {
+    // ─── Alert Thresholds & Notifications ─────────────────────────────────────
+    getThresholds(): { 
+        cpuAlert: number; 
+        ramAlert: number; 
+        diskAlert: number;
+        discordWebhook?: string;
+        tgToken?: string;
+        tgChatId?: string;
+    } {
         const defaults = { cpuAlert: 90, ramAlert: 90, diskAlert: 85 };
         try {
             if (!fs.existsSync(this.CONFIG_PATH)) return defaults;
@@ -372,23 +397,65 @@ export class MonitorService implements OnModuleInit {
                 cpuAlert:  typeof config.cpuAlert  === 'number' ? config.cpuAlert  : defaults.cpuAlert,
                 ramAlert:  typeof config.ramAlert  === 'number' ? config.ramAlert  : defaults.ramAlert,
                 diskAlert: typeof config.diskAlert === 'number' ? config.diskAlert : defaults.diskAlert,
+                discordWebhook: config.discordWebhook,
+                tgToken: config.tgToken,
+                tgChatId: config.tgChatId,
             };
         } catch { return defaults; }
     }
 
-    saveThresholds(cpuAlert: number, ramAlert: number, diskAlert: number) {
+    saveThresholds(data: any) {
         try {
             let config: any = {};
             if (fs.existsSync(this.CONFIG_PATH)) {
                 config = JSON.parse(fs.readFileSync(this.CONFIG_PATH, 'utf8'));
             }
-            config.cpuAlert  = Math.min(Math.max(cpuAlert,  1), 100);
-            config.ramAlert  = Math.min(Math.max(ramAlert,  1), 100);
-            config.diskAlert = Math.min(Math.max(diskAlert, 1), 100);
+            config.cpuAlert  = Math.min(Math.max(Number(data.cpuAlert) || 90,  1), 100);
+            config.ramAlert  = Math.min(Math.max(Number(data.ramAlert) || 90,  1), 100);
+            config.diskAlert = Math.min(Math.max(Number(data.diskAlert) || 85, 1), 100);
+            
+            if (data.discordWebhook !== undefined) config.discordWebhook = data.discordWebhook;
+            if (data.tgToken !== undefined) config.tgToken = data.tgToken;
+            if (data.tgChatId !== undefined) config.tgChatId = data.tgChatId;
+
             fs.writeFileSync(this.CONFIG_PATH, JSON.stringify(config, null, 2));
             return { success: true, thresholds: this.getThresholds() };
         } catch (e: any) {
             return { success: false, message: e.message };
+        }
+    }
+
+    async notifyAll(message: string) {
+        const config = this.getThresholds();
+        const promises = [];
+
+        // 1. WhatsApp (CallMeBot) - hardcoded/legacy
+        promises.push(this.sendWhatsApp(message));
+
+        // 2. Telegram
+        if (config.tgToken && config.tgChatId) {
+            promises.push(this.sendTelegram(config.tgToken, config.tgChatId, message));
+        }
+
+        // 3. Discord
+        if (config.discordWebhook) {
+            promises.push(this.sendDiscord(config.discordWebhook, message));
+        }
+
+        await Promise.allSettled(promises);
+    }
+
+    async sendDiscord(webhookUrl: string, message: string) {
+        try {
+            const response = await fetch(webhookUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ content: message })
+            });
+            return response.ok;
+        } catch (error) {
+            console.error('Discord Notification Error:', error);
+            return false;
         }
     }
 
