@@ -188,7 +188,7 @@ export class MonitorService implements OnModuleInit {
             return this.sysStatsCache.data;
         }
 
-        const [cpu, mem, fsData, net, time, os, cpuInfo] = await Promise.all([
+        const [cpu, mem, fsData, net, time, os, cpuInfo, dockerInfo] = await Promise.all([
             si.currentLoad(),
             si.mem(),
             si.fsSize(),
@@ -196,40 +196,45 @@ export class MonitorService implements OnModuleInit {
             si.time(),
             si.osInfo(),
             si.cpu(),
+            this.docker.info().catch(() => null), // Get real host info from Docker Socket
         ]);
 
         // Detect platform family for display purposes
         const platform = process.platform;
-        let osDisplay = `${os.distro || ''} ${os.release || ''}`.trim();
+        
+        // Use Docker info as primary source for Host OS if available
+        let osDisplay = '';
+        let kernelDisplay = os.kernel || 'N/A';
 
-        // [FIX] Detect Host OS if running in a container with /host/etc/os-release mounted
-        try {
-            const hostOsPath = '/host/etc/os-release';
-            if (fs.existsSync(hostOsPath)) {
-                const content = fs.readFileSync(hostOsPath, 'utf8');
-                const lines = content.split('\n');
-                const prettyNameLine = lines.find(l => l.startsWith('PRETTY_NAME='));
-                if (prettyNameLine && prettyNameLine.includes('=')) {
-                    const val = prettyNameLine.split('=')[1].replace(/"/g, '').trim();
-                    if (val) osDisplay = val;
-                } else {
-                    const nameLine = lines.find(l => l.startsWith('NAME='));
-                    if (nameLine && nameLine.includes('=')) {
-                        const val = nameLine.split('=')[1].replace(/"/g, '').trim();
+        if (dockerInfo) {
+            osDisplay = (dockerInfo as any).OperatingSystem || '';
+            kernelDisplay = (dockerInfo as any).KernelVersion || kernelDisplay;
+        }
+
+        // Fallback to manual host-file detection if Docker info failed
+        if (!osDisplay) {
+            try {
+                const hostOsPath = '/host/etc/os-release';
+                if (fs.existsSync(hostOsPath)) {
+                    const content = fs.readFileSync(hostOsPath, 'utf8');
+                    const lines = content.split('\n');
+                    const prettyNameLine = lines.find(l => l.startsWith('PRETTY_NAME='));
+                    if (prettyNameLine && prettyNameLine.includes('=')) {
+                        const val = prettyNameLine.split('=')[1].replace(/"/g, '').trim();
                         if (val) osDisplay = val;
                     }
                 }
-            }
-        } catch (e) {
-            console.error('[Monitor] Error detecting host OS:', e);
+            } catch (e) {}
         }
 
-        // Final safety fallback
+        // Final fallback to container OS
+        if (!osDisplay) {
+            osDisplay = `${os.distro || ''} ${os.release || ''}`.trim();
+        }
+
         if (!osDisplay || osDisplay.trim() === '') {
-            // Fallback for minimal containers without full OS detection
-            if (platform === 'linux') osDisplay = `Linux ${os.kernel || ''}`;
+            if (platform === 'linux') osDisplay = `Linux ${kernelDisplay}`;
             else if (platform === 'win32') osDisplay = `Windows ${os.release || ''}`;
-            else if (platform === 'darwin') osDisplay = `macOS ${os.release || ''}`;
             else osDisplay = `${platform} ${os.release || ''}`;
         }
 
@@ -252,7 +257,7 @@ export class MonitorService implements OnModuleInit {
             hostname: os.hostname,
             os: osDisplay,
             platform: platform,
-            kernel: os.kernel || 'N/A',
+            kernel: kernelDisplay,
             arch: os.arch || process.arch,
             cpuModel: `${cpuInfo.manufacturer} ${cpuInfo.brand}`.trim() || 'Unknown CPU',
             cpuCores: cpuInfo.cores,
