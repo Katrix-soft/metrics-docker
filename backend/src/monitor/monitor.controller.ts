@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Param, Body, All, Query } from '@nestjs/common';
+import { Controller, Get, Post, Param, Body, All, Query, Delete } from '@nestjs/common';
 import { MonitorService } from './monitor.service';
 import { HistoryService } from './history.service';
 import { UptimeService } from './uptime.service';
