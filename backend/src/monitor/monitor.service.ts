@@ -208,19 +208,24 @@ export class MonitorService implements OnModuleInit {
             if (fs.existsSync(hostOsPath)) {
                 const content = fs.readFileSync(hostOsPath, 'utf8');
                 const lines = content.split('\n');
-                const prettyName = lines.find(l => l.startsWith('PRETTY_NAME='));
-                if (prettyName) {
-                    osDisplay = prettyName.split('=')[1].replace(/"/g, '');
+                const prettyNameLine = lines.find(l => l.startsWith('PRETTY_NAME='));
+                if (prettyNameLine && prettyNameLine.includes('=')) {
+                    const val = prettyNameLine.split('=')[1].replace(/"/g, '').trim();
+                    if (val) osDisplay = val;
                 } else {
-                    const name = lines.find(l => l.startsWith('NAME='));
-                    if (name) osDisplay = name.split('=')[1].replace(/"/g, '');
+                    const nameLine = lines.find(l => l.startsWith('NAME='));
+                    if (nameLine && nameLine.includes('=')) {
+                        const val = nameLine.split('=')[1].replace(/"/g, '').trim();
+                        if (val) osDisplay = val;
+                    }
                 }
             }
         } catch (e) {
             console.error('[Monitor] Error detecting host OS:', e);
         }
 
-        if (!osDisplay || osDisplay === ' ') {
+        // Final safety fallback
+        if (!osDisplay || osDisplay.trim() === '') {
             // Fallback for minimal containers without full OS detection
             if (platform === 'linux') osDisplay = `Linux ${os.kernel || ''}`;
             else if (platform === 'win32') osDisplay = `Windows ${os.release || ''}`;
@@ -492,13 +497,22 @@ export class MonitorService implements OnModuleInit {
                     const cpuPercent = systemDelta > 0 ? (cpuDelta / systemDelta) * containerStats.cpu_stats.online_cpus * 100 : 0;
 
                     const memUsed = containerStats.memory_stats.usage || 0;
-                    const stack = containerInfo.Labels['com.docker.compose.project'] ||
-                        containerInfo.Labels['com.docker.stack.namespace'] ||
+                    const labels = containerInfo.Labels || {};
+                    const stack = labels['com.docker.compose.project'] ||
+                        labels['com.docker.stack.namespace'] ||
+                        labels['easypanel.project.name'] ||
                         'standalone';
+
+                    // Try to find a friendlier name from labels
+                    const friendlyName = labels['com.docker.compose.service'] || 
+                                       labels['com.docker.stack.service.name'] ||
+                                       labels['easypanel.service.name'] ||
+                                       containerInfo.Names[0].replace('/', '');
 
                     return {
                         id: containerInfo.Id.substring(0, 12),
-                        name: containerInfo.Names[0].replace('/', ''),
+                        name: friendlyName,
+                        fullName: containerInfo.Names[0].replace('/', ''),
                         image: containerInfo.Image,
                         status: containerInfo.State,
                         stack,
