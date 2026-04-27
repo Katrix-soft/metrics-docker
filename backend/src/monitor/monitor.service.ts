@@ -201,6 +201,25 @@ export class MonitorService implements OnModuleInit {
         // Detect platform family for display purposes
         const platform = process.platform;
         let osDisplay = `${os.distro || ''} ${os.release || ''}`.trim();
+
+        // [FIX] Detect Host OS if running in a container with /host/etc/os-release mounted
+        try {
+            const hostOsPath = '/host/etc/os-release';
+            if (fs.existsSync(hostOsPath)) {
+                const content = fs.readFileSync(hostOsPath, 'utf8');
+                const lines = content.split('\n');
+                const prettyName = lines.find(l => l.startsWith('PRETTY_NAME='));
+                if (prettyName) {
+                    osDisplay = prettyName.split('=')[1].replace(/"/g, '');
+                } else {
+                    const name = lines.find(l => l.startsWith('NAME='));
+                    if (name) osDisplay = name.split('=')[1].replace(/"/g, '');
+                }
+            }
+        } catch (e) {
+            console.error('[Monitor] Error detecting host OS:', e);
+        }
+
         if (!osDisplay || osDisplay === ' ') {
             // Fallback for minimal containers without full OS detection
             if (platform === 'linux') osDisplay = `Linux ${os.kernel || ''}`;

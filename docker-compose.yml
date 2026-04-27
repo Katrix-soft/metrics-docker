@@ -16,6 +16,10 @@ services:
       - PORT=3000
       - TZ=UTC
       - AUTH_PASS=katrix2026
+      # systeminformation host path overrides
+      - HOST_PROC=/host/proc
+      - HOST_SYS=/host/sys
+      - HOST_ETC=/host/etc
       # Repos from github.com/Katrix-soft — must be cloned in /home/katrix/repos/<name> on the VPS
       - REPOSITORIES=landingdj,metrics-docker,erp-eana,landing-k,Landing-Katrix-16-07,Login-Dashboard
       - REPOS_BASE_PATH=/repos
