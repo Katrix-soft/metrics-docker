@@ -207,8 +207,10 @@ export class MonitorService implements OnModuleInit {
         let kernelDisplay = os.kernel || 'N/A';
 
         if (dockerInfo) {
-            osDisplay = (dockerInfo as any).OperatingSystem || '';
-            kernelDisplay = (dockerInfo as any).KernelVersion || kernelDisplay;
+            // Docker API usually returns OperatingSystem and KernelVersion
+            const d = dockerInfo as any;
+            osDisplay = d.OperatingSystem || d.operatingSystem || d.OS || '';
+            kernelDisplay = d.KernelVersion || d.kernelVersion || kernelDisplay;
         }
 
         // Fallback to manual host-file detection if Docker info failed
