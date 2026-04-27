@@ -239,61 +239,77 @@
 
     <header class="header">
         <div class="brand">
-            NEXPULSE <span style="font-weight: 300; opacity: 0.6; font-size: 0.8em;">by Katrix</span>
-
+            NEXPULSE
+            <span style="font-weight: 300; opacity: 0.6; font-size: 0.6em; vertical-align: middle; margin-left: 4px;">by Katrix</span>
         </div>
 
         <div class="system-summary">
             <div class="summary-item">
-                <span class="label">HOSTNAME</span>
+                <span class="label">
+                    <svg width="10" height="10" fill="currentColor" viewBox="0 0 16 16" style="margin-right: 4px; opacity: 0.7;">
+                        <path d="M5.5 2A1.5 1.5 0 0 0 4 3.5v9A1.5 1.5 0 0 0 5.5 14h5a1.5 1.5 0 0 0 1.5-1.5v-9A1.5 1.5 0 0 0 10.5 2h-5z"/>
+                    </svg>HOSTNAME
+                </span>
                 <span class="value">{{ system?.hostname }}</span>
             </div>
-            <div class="summary-item">
-                <span class="label">OS</span>
-                <span class="value">{{ system?.os }}</span>
+            <div class="summary-item" style="border-bottom: 2px solid var(--accent-color);">
+                <span class="label">
+                    <svg width="10" height="10" fill="currentColor" viewBox="0 0 16 16" style="margin-right: 4px; opacity: 0.7;">
+                        <path d="M1 8a7 7 0 1 0 14 0A7 7 0 0 0 1 8zm15 0A8 8 0 1 1 0 8a8 8 0 0 1 16 0z"/>
+                    </svg>OS
+                </span>
+                <span class="value" style="color: var(--accent-color);">{{ system?.os }}</span>
             </div>
             <div class="summary-item">
-                <span class="label">KERNEL</span>
+                <span class="label">
+                    <svg width="10" height="10" fill="currentColor" viewBox="0 0 16 16" style="margin-right: 4px; opacity: 0.7;">
+                        <path d="M8 0a.5.5 0 0 1 .5.5v.757l.5.5.5-.5V.5a.5.5 0 0 1 1 0v.757l.5.5.5-.5V.5a.5.5 0 0 1 1 0v.757l.5.5.5-.5V.5a.5.5 0 0 1 1 0v.757l.5.5.5-.5V.5a.5.5 0 0 1 1 0v.757l.5.5.5-.5V.5a.5.5 0 0 1 1 0v11a.5.5 0 0 1-1 0v-.757l-.5.5-.5-.5v.757a.5.5 0 0 1-1 0v-.757l-.5.5-.5-.5v.757a.5.5 0 0 1-1 0v-.757l-.5.5-.5-.5v.757a.5.5 0 0 1-1 0v-.757l-.5.5-.5-.5v.757a.5.5 0 0 1-1 0v-11A.5.5 0 0 1 8 0z"/>
+                    </svg>KERNEL
+                </span>
                 <span class="value">{{ system?.kernel }}</span>
             </div>
             <div class="summary-item">
-                <span class="label">UPTIME</span>
+                <span class="label">
+                    <svg width="10" height="10" fill="currentColor" viewBox="0 0 16 16" style="margin-right: 4px; opacity: 0.7;">
+                        <path d="M8 3.5a.5.5 0 0 0-1 0V9a.5.5 0 0 0 .252.434l3.5 2a.5.5 0 0 0 .496-.868L8 8.71V3.5z"/>
+                        <path d="M8 16A8 8 0 1 0 8 0a8 8 0 0 0 0 16zm7-8A7 7 0 1 1 1 8a7 7 0 0 1 14 0z"/>
+                    </svg>UPTIME
+                </span>
                 <span class="value">{{ system?.uptime }}</span>
             </div>
             <div class="summary-item capacity-status" [class]="getCapacityInfo().status.toLowerCase()">
                 <span class="label">STACK CAPACITY</span>
-                <span class="value" style="color: var(--accent-color); font-weight: bold;">
-                    ≈ {{ getCapacityInfo().stacks }} MORE STACKS
+                <span class="value" style="color: #3fb950; font-weight: 800;">
+                    ≈ {{ getCapacityInfo().stacks }} STACKS
                 </span>
-                <small style="font-size: 0.6rem; display: block; opacity: 0.7;">
-                    ({{ getCapacityInfo().remaining }}MB FREE)
+                <small style="font-size: 0.6rem; display: block; opacity: 0.6; margin-top: 2px;">
+                    {{ getCapacityInfo().remaining }}MB FREE
                 </small>
             </div>
-            <button class="pause-btn" (click)="optimizeSystem()"
-                style="background: #238636; border: 1px solid #1f672a; box-shadow: 0 0 10px rgba(35, 134, 54, 0.4);">
-                🚀 OPTIMIZE
-            </button>
-            <button class="pause-btn" (click)="stopAllIdle()"
-                style="background: #3c1e70; border: 1px solid #6f42c1; box-shadow: 0 0 10px rgba(111, 66, 193, 0.3);">
-                💤 OPTIMIZAR IDLE
-            </button>
-            <button class="pause-btn" (click)="togglePause()" [class.paused]="paused">
-                {{ paused ? 'RESUME' : 'PAUSE' }}
-            </button>
-            <button class="pause-btn" (click)="showSettings = true" style="background: #24292f;">
-                🔐 SECURITY
-            </button>
-            <button class="pause-btn" (click)="toggleProcesses()"
-                [style]="showProcesses ? 'background:#1a1a2e; border:1px solid #a78bfa; color:#a78bfa;' : 'background:#1a1a2e; border:1px solid #30363d; color:#8b949e;'">
-                📊 HTOP {{ showProcesses ? 'ON' : 'OFF' }}
-            </button>
-            <button class="pause-btn" (click)="showGitActivity = !showGitActivity"
-                [style]="showGitActivity ? 'background:#1a2a3a; border:1px solid #58a6ff; color:#58a6ff;' : 'background:#1a2a3a; border:1px solid #30363d; color:#8b949e;'">
-                ⎇ GIT {{ showGitActivity ? 'ON' : 'OFF' }}
-            </button>
-            <button class="pause-btn" (click)="logout()" style="background: #da3633; color: white;">
-                LOGOUT
-            </button>
+            
+            <div class="actions-group" style="display: flex; gap: 0.5rem; align-items: center; margin-left: 1rem;">
+                <button class="pause-btn" (click)="optimizeSystem()" title="One-click optimization"
+                    style="background: #238636; border: 1px solid #2ea44f; color: white;">
+                    🚀 OPTIMIZE
+                </button>
+                <button class="pause-btn" (click)="stopAllIdle()" title="Stop containers without traffic"
+                    style="background: #3c1e70; border: 1px solid #6f42c1; color: white;">
+                    💤 IDLE
+                </button>
+                <button class="pause-btn" (click)="togglePause()" [class.paused]="paused">
+                    {{ paused ? '▶️ RESUME' : '⏸️ PAUSE' }}
+                </button>
+                <button class="pause-btn" (click)="showSettings = true" style="background: #24292f;">
+                    🔐 SECURITY
+                </button>
+                <button class="pause-btn" (click)="toggleProcesses()"
+                    [style]="showProcesses ? 'background:#1a1a2e; border:1px solid #a78bfa; color:#a78bfa;' : 'background:#1a1a2e; border:1px solid #30363d; color:#8b949e;'">
+                    📊 HTOP
+                </button>
+                <button class="pause-btn" (click)="logout()" style="background: #da3633; color: white; border: none;">
+                    LOGOUT
+                </button>
+            </div>
         </div>
     </header>
 

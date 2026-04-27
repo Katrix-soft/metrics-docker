@@ -11,12 +11,15 @@
 
 ### Capacidades Core:
 - **📊 Observabilidad en Tiempo Real:** Métricas de CPU, RAM y disco del host VPS.
+- **🖥️ Transparencia de Hardware:** Detección automática del Host OS y Kernel (vía Docker API) sin importar el contenedor.
 - **🐳 Gestión de Contenedores:** Start, stop, restart, y monitoreo de logs de Docker.
+- **🏷️ Friendly Service Names:** Mapeo automático de labels de Docker Compose/Easypanel para nombres legibles.
 - **⎇ Integración Git:** Estado de sincronización de repositorios de la organización GitHub.
 - **🚀 One-Click Deploy:** Gatilla webhooks de Portainer para despliegues instantáneos.
 - **🔥 Force Clean Redeploy:** Solución automatizada para "container name conflict" limpiando volúmenes y recreando stacks.
 - **🤖 RAM Optimizer:** Analizador inteligente que hiberna contenedores inactivos para liberar memoria.
 - **🔐 Seguridad Multi-factor:** TOTP (Google Authenticator) y Biometría (FIDO2/WebAuthn).
+- **💎 Design System:** Interfaz premium con glassmorphism y micro-animaciones (Sapphire & Champagne Gold).
 
 ---
 
@@ -29,13 +32,13 @@
 katrix-monitor-lite/
 ├── backend/                # API NestJS
 │   ├── src/
+│   │   ├── monitor/        # Lógica de detección de host OS via Docker Socket y metricas
 │   │   ├── git-activity/   # Lógica de clonado, pull y webhooks
 │   │   ├── docker/         # Wrapper de Dockerode para control de containers
-│   │   ├── metrics/        # Recolección de datos del sistema (sysinfo)
 │   │   └── auth/           # Estrategias de login, 2FA y WebAuthn
 ├── frontend/               # SPA Angular 17
 │   ├── src/app/
-│   │   ├── dashboard/      # Vista principal con gráficas Chart.js
+│   │   ├── dashboard/      # Vista principal con gráficas Chart.js y UI Glassmorphism
 │   │   ├── git-activity/   # Cards de repositorios y botones de deploy
 │   │   └── services/       # Clientes de Socket.io y API Rest
 ├── setup-repos.sh          # Script de bash para inicializar el VPS
@@ -44,8 +47,9 @@ katrix-monitor-lite/
 
 ### Lógica de Operación
 1. **Comunicación:** El frontend se conecta vía **WebSockets (Socket.io)** para recibir métricas cada segundo y estados de deploy.
-2. **Dockerode:** El backend interactúa directamente con el socket de Docker del host (`/var/run/docker.sock`), permitiendo control total sobre el motor Docker.
-3. **Webhooks:** NexPulse actúa como un "Proxy de Deploy". GitHub envía un webhook a NexPulse → NexPulse identifica el repo → Envía un webhook a Portainer → Portainer recrea el contenedor.
+2. **Dockerode:** El backend interactúa directamente con el socket de Docker del host (`/var/run/docker.sock`).
+3. **Host OS Detection:** El backend utiliza `docker.info()` para consultar la información del host directamente al motor Docker, garantizando que el dashboard muestre "Ubuntu 22.04" en lugar de la distro del contenedor.
+4. **Friendly Names:** Se extraen los nombres de los servicios usando las etiquetas `com.docker.compose.service` y `easypanel.service.name` para evitar mostrar IDs internos de Docker.
 
 ---
 
@@ -61,6 +65,7 @@ graph TD
         Backend -->|Docker Socket| DockerEngine[Docker Engine]
         Backend -->|FileSystem| Repos[/home/katrix/repos]
         DockerEngine --> Containers[Stacks: ERP, Landing, Metrics...]
+        DockerEngine -.->|API Info| HostOS[Host OS/Kernel Details]
     end
     
     Backend -->|Webhooks| Portainer[Portainer API]
@@ -128,6 +133,7 @@ npm run start
 
 - **Protección de Brute Force:** Bloqueo temporal de IP tras fallos de login.
 - **2FA:** Obligatorio para acciones críticas (como Force Clean Redeploy).
+- **FIDO2/WebAuthn:** Soporte nativo para llaves de seguridad físicas y datos biométricos del sistema operativo.
 - **Docker Isolation:** El backend solo tiene permisos sobre los contenedores definidos en su lógica, no sobre todo el host (principio de menor privilegio).
 
 ---
