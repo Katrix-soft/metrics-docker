@@ -303,6 +303,10 @@
                     [style]="showHistory ? 'background:#1a1a2e; border:1px solid #58a6ff; color:#58a6ff;' : 'background:#1a1a2e; border:1px solid #30363d; color:#8b949e;'">
                     📈 TRENDS
                 </button>
+                <button class="pause-btn" (click)="toggleUptime()"
+                    [style]="showUptime ? 'background:#1a1a2e; border:1px solid #2ea44f; color:#2ea44f;' : 'background:#1a1a2e; border:1px solid #30363d; color:#8b949e;'">
+                    🌐 UPTIME
+                </button>
                 <button class="pause-btn" (click)="logout()" style="background: #da3633; color: white; border: none;">
                     LOGOUT
                 </button>
@@ -376,6 +380,62 @@
                     <span style="font-size: 0.75rem; color: #c9d1d9;">RAM Usage</span>
                 </div>
             </div>
+        </div>
+    </div>
+
+    <!-- Uptime / Health Section (Prometheus-lite) -->
+    <div class="processes-panel" *ngIf="showUptime" style="margin-bottom: 2rem; border-color: #2ea44f;">
+        <div class="proc-header" style="background: rgba(46,164,79,0.05);">
+            <div class="proc-title">
+                <span style="color: #2ea44f; margin-right: 8px;">🌐</span>
+                SERVICE HEALTH MONITOR
+            </div>
+            <div class="proc-tabs" style="display: flex; gap: 0.5rem; align-items: center;">
+                <input type="text" [(ngModel)]="newUptimeName" placeholder="Name" class="search-input" style="width: 100px; height: 30px; border-radius: 4px; font-size: 0.75rem;">
+                <input type="text" [(ngModel)]="newUptimeUrl" placeholder="https://..." class="search-input" style="width: 150px; height: 30px; border-radius: 4px; font-size: 0.75rem;">
+                <button class="proc-tab" (click)="addUptime()" style="background: #238636; color: white; padding: 4px 12px; height: 30px;">ADD</button>
+            </div>
+        </div>
+
+        <div class="proc-list" style="max-height: 400px; overflow-y: auto;">
+            <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem;">
+                <thead style="position: sticky; top: 0; background: #0d1117; z-index: 10; border-bottom: 1px solid #30363d;">
+                    <tr>
+                        <th style="padding: 12px; text-align: left; color: #8b949e;">SERVICE NAME</th>
+                        <th style="padding: 12px; text-align: left; color: #8b949e;">URL</th>
+                        <th style="padding: 12px; text-align: center; color: #8b949e;">STATUS</th>
+                        <th style="padding: 12px; text-align: center; color: #8b949e;">AVG LATENCY</th>
+                        <th style="padding: 12px; text-align: center; color: #8b949e;">INCIDENTS (24H)</th>
+                        <th style="padding: 12px; text-align: center; color: #8b949e;">ACTIONS</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr *ngFor="let s of uptimeData" style="border-bottom: 1px solid #21262d;">
+                        <td style="padding: 10px 12px; color: #c9d1d9; font-weight: 600;">{{ s.name }}</td>
+                        <td style="padding: 10px 12px; color: #8b949e; font-size: 0.75rem;">{{ s.url }}</td>
+                        <td style="padding: 10px 12px; text-align: center;">
+                            <span *ngIf="s.last_status === 1" style="color: #3fb950; font-size: 0.7rem; font-weight: bold; background: rgba(63,185,80,0.1); padding: 4px 8px; border-radius: 12px;">● ONLINE</span>
+                            <span *ngIf="s.last_status !== 1" style="color: #f85149; font-size: 0.7rem; font-weight: bold; background: rgba(248,81,73,0.1); padding: 4px 8px; border-radius: 12px;">● OFFLINE</span>
+                        </td>
+                        <td style="padding: 10px 12px; text-align: center; color: #c9d1d9;">
+                            {{ s.avg_response ? (s.avg_response | number:'1.0-0') + 'ms' : '—' }}
+                        </td>
+                        <td style="padding: 10px 12px; text-align: center; color: #8b949e;">
+                            <span [style.color]="s.downtime_incidents > 0 ? '#f85149' : '#8b949e'">{{ s.downtime_incidents }}</span>
+                        </td>
+                        <td style="padding: 10px 12px; text-align: center;">
+                            <button (click)="removeUptime(s.id)" style="background: none; border: none; color: #f85149; cursor: pointer; font-size: 1rem;" title="Delete">🗑️</button>
+                        </td>
+                    </tr>
+                    <tr *ngIf="uptimeData.length === 0">
+                        <td colspan="6" style="padding: 2rem; text-align: center; color: #8b949e;">No services monitored yet.</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        
+        <div style="padding: 1rem; border-top: 1px solid #30363d; background: rgba(13,17,23,0.5); font-size: 0.75rem; color: #8b949e;">
+            Services are checked every 5 minutes. Status changes trigger alerts via Discord/Telegram/WhatsApp.
         </div>
     </div>
 

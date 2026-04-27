@@ -1,12 +1,14 @@
 import { Controller, Get, Post, Param, Body, All, Query } from '@nestjs/common';
 import { MonitorService } from './monitor.service';
 import { HistoryService } from './history.service';
+import { UptimeService } from './uptime.service';
 
 @Controller('api')
 export class MonitorController {
     constructor(
         private readonly monitorService: MonitorService,
-        private readonly historyService: HistoryService
+        private readonly historyService: HistoryService,
+        private readonly uptimeService: UptimeService
     ) { }
 
     @Get('system')
@@ -22,6 +24,21 @@ export class MonitorController {
     @Get('system/daily')
     async getDaily() {
         return this.historyService.getDailyAverages();
+    }
+
+    @Get('uptime')
+    async getUptime() {
+        return this.uptimeService.getUptimeSummary();
+    }
+
+    @Post('uptime')
+    async addUptimeTarget(@Body() body: { name: string, url: string }) {
+        return this.uptimeService.addTarget(body.name, body.url);
+    }
+
+    @Delete('uptime/:id')
+    async removeUptimeTarget(@Param('id') id: string) {
+        return this.uptimeService.removeTarget(Number(id));
     }
 
     @Get('docker')

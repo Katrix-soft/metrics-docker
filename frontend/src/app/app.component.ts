@@ -51,6 +51,12 @@ export class AppComponent implements OnInit, OnDestroy, AfterViewInit {
     dailyAverages: any[] = [];
     historyLimit = 1440; // 24h if 1min snapshots
 
+    // ── Uptime & Service Health (Prometheus-lite) ─────────────────────────
+    showUptime = false;
+    uptimeData: any[] = [];
+    newUptimeName = '';
+    newUptimeUrl = '';
+
     // Custom Confirm Modal
     showConfirm = false;
     confirmTitle = '';
@@ -868,7 +874,41 @@ export class AppComponent implements OnInit, OnDestroy, AfterViewInit {
         });
     }
 
-    // \u2500\u2500 Alert Thresholds \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+    // ── Uptime Monitoring ──────────────────────────────────────────────────
+    toggleUptime() {
+        this.showUptime = !this.showUptime;
+        if (this.showUptime) {
+            this.fetchUptime();
+        }
+    }
+
+    fetchUptime() {
+        this.http.get('/api/uptime').subscribe({
+            next: (data: any) => { this.uptimeData = data; },
+            error: () => { this.uptimeData = []; }
+        });
+    }
+
+    addUptime() {
+        if (!this.newUptimeName || !this.newUptimeUrl) return;
+        this.http.post('/api/uptime', { name: this.newUptimeName, url: this.newUptimeUrl }).subscribe(() => {
+            this.newUptimeName = '';
+            this.newUptimeUrl = '';
+            this.fetchUptime();
+            this.statusMessage = '✅ Monitoreo añadido';
+            this.clearStatus();
+        });
+    }
+
+    removeUptime(id: number) {
+        this.http.delete(`/api/uptime/${id}`).subscribe(() => {
+            this.fetchUptime();
+            this.statusMessage = '🗑️ Monitoreo eliminado';
+            this.clearStatus();
+        });
+    }
+
+    // ── Alert Thresholds ──────────────────────────────────────────────────────────────────────────
 
     loadThresholds() {
         this.http.get('/api/thresholds').subscribe({
@@ -885,7 +925,7 @@ export class AppComponent implements OnInit, OnDestroy, AfterViewInit {
     }
 
     saveThresholds() {
-        this.statusMessage = '\u23f3 Guardando umbrales...';
+        this.statusMessage = '⏳ Guardando configuración...';
         this.http.post('/api/thresholds', {
             cpuAlert:  this.thresholdCpu,
             ramAlert:  this.thresholdRam,
@@ -896,14 +936,14 @@ export class AppComponent implements OnInit, OnDestroy, AfterViewInit {
         }).subscribe({
             next: (res: any) => {
                 if (res.success) {
-                    this.statusMessage = `\u2705 Umbrales guardados: CPU ${this.thresholdCpu}% · RAM ${this.thresholdRam}% · Disco ${this.thresholdDisk}%`;
+                    this.statusMessage = '✅ Configuración guardada correctamente.';
                 } else {
-                    this.statusMessage = '\u274c Error al guardar umbrales';
+                    this.statusMessage = '❌ Error al guardar configuración';
                 }
                 this.clearStatus();
             },
             error: () => {
-                this.statusMessage = '\u274c Error de red al guardar';
+                this.statusMessage = '❌ Error de red al guardar';
                 this.clearStatus();
             }
         });
