@@ -57,7 +57,7 @@ export class UptimeService implements OnModuleInit {
       this.db.get("SELECT count(*) as count FROM uptime_targets", (err, row: any) => {
         if (!err && row.count === 0) {
           const defaults = [
-            ['Panel NexPulse', 'http://localhost:3001/api/health'],
+            ['Panel NexPulse', 'http://localhost:3000/api/system'],
             ['Google Connectivity', 'https://www.google.com']
           ];
           const stmt = this.db.prepare("INSERT INTO uptime_targets (name, url) VALUES (?, ?)");
