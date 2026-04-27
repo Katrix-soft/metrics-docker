@@ -305,15 +305,15 @@ export class MonitorService implements OnModuleInit {
             // Top 10 by CPU
             const byCpu = [...list]
                 .filter(p => p.pid > 0)
-                .sort((a, b) => b.pcpu - a.pcpu)
+                .sort((a, b) => b.cpu - a.cpu)
                 .slice(0, 12)
                 .map(p => ({
                     pid: p.pid,
                     name: p.name || 'unknown',
                     command: (p.command || p.name || '').substring(0, 60),
-                    cpu: p.pcpu.toFixed(1),
-                    mem: p.pmem.toFixed(1),
-                    memBytes: p.mem_rss ? (p.mem_rss / 1024).toFixed(0) + ' MB' : '—',
+                    cpu: p.cpu.toFixed(1),
+                    mem: p.mem.toFixed(1),
+                    memBytes: p.memRss ? (p.memRss / 1024).toFixed(0) + ' MB' : '—',
                     user: p.user || '—',
                     state: p.state || '?',
                 }));
@@ -321,15 +321,15 @@ export class MonitorService implements OnModuleInit {
             // Top 10 by MEM
             const byMem = [...list]
                 .filter(p => p.pid > 0)
-                .sort((a, b) => b.pmem - a.pmem)
+                .sort((a, b) => b.mem - a.mem)
                 .slice(0, 12)
                 .map(p => ({
                     pid: p.pid,
                     name: p.name || 'unknown',
                     command: (p.command || p.name || '').substring(0, 60),
-                    cpu: p.pcpu.toFixed(1),
-                    mem: p.pmem.toFixed(1),
-                    memBytes: p.mem_rss ? (p.mem_rss / 1024).toFixed(0) + ' MB' : '—',
+                    cpu: p.cpu.toFixed(1),
+                    mem: p.mem.toFixed(1),
+                    memBytes: p.memRss ? (p.memRss / 1024).toFixed(0) + ' MB' : '—',
                     user: p.user || '—',
                     state: p.state || '?',
                 }));
